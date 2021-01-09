@@ -5,6 +5,7 @@
 #include "SmallVector.hpp"
 #include "read_mesh.hpp"
 
+#include <cassert>
 #include <vector>
 
 #define FMT_HEADER_ONLY
@@ -32,5 +33,21 @@ struct DensityFilter
 };
 
 std::vector<DensityFilter> build_filters(const MeshVariant &mesh, double r0);
+
+template <class Vin, class Vout>
+void filter_densities(Vout &filtered, const Vin &rho, const std::vector<DensityFilter> &filter)
+{
+    assert(filtered.size() == rho.size());
+    assert(filtered.size() == filter.size());
+
+    for (std::size_t i = 0; i < filtered.size(); ++i)
+    {
+        filtered[i] = 0;
+        for (const auto [j, w] : filter[i].entries)
+        {
+            filtered[i] += w * rho[j];
+        }
+    }
+}
 
 #endif // DENSITY_FILTER_HPP

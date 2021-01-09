@@ -23,7 +23,7 @@
 #ifndef SYMSPARSE_HPP
 #define SYMSPARSE_HPP
 
-#include "../SmallVector/SmallVector.hpp"
+#include "SmallVector.hpp"
 
 #include <algorithm>
 #include <cstddef> // std::size_t;
@@ -205,6 +205,14 @@ public:
             std::swap(i, j);
         }
         insert_entry_in_row(i, j, val);
+    }
+
+    void reset() noexcept
+    {
+        for (auto &row : m_rows)
+        {
+            row.clear();
+        }
     }
 
     template <class RHS, class Adjacent, class CheckBounds = std::true_type>
