@@ -36,11 +36,20 @@ struct ModelInfo
     // Storage for the forward stiffness matrix.
     stiffness_matrix_t forward_stiffness;
     Eigen::SparseMatrix<double> forward_stiffness_eigen;
+    // Factorization of the stiffness.
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> factorized;
 
-    ModelInfo(Mesh &&m, ErsatzStiffness i, std::vector<DensityFilter> &&filt, std::vector<size_t> &&hom)
+    // The right hand side and displacement vectors.
+    Eigen::VectorXd nodal_forcing;
+    Eigen::VectorXd displacement;
+
+    ModelInfo(Mesh &&m, ErsatzStiffness i, std::vector<DensityFilter> &&filt, std::vector<size_t> &&hom,
+        Eigen::VectorXd &&forcing)
         : mesh(std::move(m)), interp(i), filter(std::move(filt)), homogeneous_boundaries(std::move(hom)),
-          forward_stiffness(2 * mesh.num_nodes())
+          forward_stiffness(2 * mesh.num_nodes()), nodal_forcing(std::move(forcing)),
+          displacement(Eigen::VectorXd::Zero(nodal_forcing.size()))
     {
+        assert(displacement.size() == 2 * mesh.num_nodes());
     }
 };
 
@@ -73,6 +82,8 @@ void initialize_model_info(ModelInfo<Mesh> &minfo, double lambda, double mu)
         Elasticity::TwoD::impose_homogeneous_condition(mesh, minfo.forward_stiffness, which);
     }
     construct_eigen_stiffness(minfo.forward_stiffness_eigen, minfo.forward_stiffness);
+    minfo.factorized.analyzePattern(minfo.forward_stiffness_eigen);
+    
     return minfo;
 }
 
