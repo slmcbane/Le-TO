@@ -66,7 +66,7 @@ T checked_read(FILE *in)
 template <class T>
 void checked_read(FILE *in, T *dst, const int64_t count)
 {
-    if (fread(dst, sizeof(T), count, in) != count)
+    if (fread(dst, sizeof(T), count, in) != static_cast<unsigned long>(count))
     {
         throw SerializationException{};
     }

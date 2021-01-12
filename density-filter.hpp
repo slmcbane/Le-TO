@@ -37,8 +37,8 @@ std::vector<DensityFilter> build_filters(const MeshVariant &mesh, double r0);
 template <class Vin, class Vout>
 void filter_densities(Vout &filtered, const Vin &rho, const std::vector<DensityFilter> &filter)
 {
-    assert(filtered.size() == rho.size());
-    assert(filtered.size() == filter.size());
+    assert(static_cast<unsigned long>(filtered.size()) == static_cast<unsigned long>(rho.size()));
+    assert(static_cast<unsigned long>(filtered.size()) == static_cast<unsigned long>(filter.size()));
 
     for (std::size_t i = 0; i < filtered.size(); ++i)
     {

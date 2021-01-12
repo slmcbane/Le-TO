@@ -56,7 +56,7 @@ struct ModelInfo
           forward_stiffness_eigen(2 * mesh.num_nodes(), 2 * mesh.num_nodes()),
           nodal_forcing(std::move(forcing)), displacement(Eigen::VectorXd::Zero(nodal_forcing.size()))
     {
-        assert(displacement.size() == 2 * mesh.num_nodes());
+        assert(static_cast<unsigned long>(displacement.size()) == 2 * mesh.num_nodes());
     }
 
     ModelInfo(ModelInfo &&other) = default;
@@ -136,7 +136,7 @@ void update_forward_stiffness(ModelInfo<Mesh> &minfo, std::size_t eli, bool init
 {
     const auto &nn = minfo.mesh.element(eli).node_numbers();
     const auto &Kel = minfo.ref_stiffness_matrices.at(eli);
-    assert(nn.size() * 2 == Kel.rows());
+    assert(nn.size() * 2 == static_cast<unsigned>(Kel.rows()));
     assert(Kel.rows() == Kel.cols());
 
     double scaling = init ? 1.0 : minfo.interp(minfo.rho_filt[eli]);
@@ -213,15 +213,15 @@ auto build_vector_mass_matrix(const LineMesh<Order> &mesh)
 
     using Triplet = Eigen::Triplet<double>;
     std::vector<Triplet> triplets;
-    for (long el = 0; el < elements.size(); ++el)
+    for (std::size_t el = 0; el < elements.size(); ++el)
     {
         const auto element = elements[el];
         const auto el_dofs = dofs[el];
 
         const auto local_M = element.form_matrix(mass_form);
-        for (long i = 0; i < el_dofs.size(); ++i)
+        for (std::size_t i = 0; i < el_dofs.size(); ++i)
         {
-            for (long j = i; j < el_dofs.size(); ++j)
+            for (std::size_t j = i; j < el_dofs.size(); ++j)
             {
                 triplets.emplace_back(2 * el_dofs[i], 2 * el_dofs[j], local_M(i, j));
                 triplets.emplace_back(2 * el_dofs[i] + 1, 2 * el_dofs[j] + 1, local_M(i, j));
