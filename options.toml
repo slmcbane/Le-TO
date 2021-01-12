@@ -1,0 +1,13 @@
+mesh_file = "lbracket.msh"
+mesh_order = 1
+force_magnitude = 0.1
+filter_radius = 0.01
+
+[Material]
+epsilon_constitutive = 1e-3
+epsilon_stress = 1e-6
+simp_exponent = 3
+stress_exponent = 0.5
+youngs_modulus = 100.0
+youngs_modulus_stress = 100.0
+poissons_ratio = 0.3
