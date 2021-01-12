@@ -36,7 +36,7 @@ using MeshVariant = std::variant<
     msh::TetMesh<double, max_element_adjacencies, max_node_adjacencies<4>(), 3, 3>>;
 
 template <int order>
-using MeshType = std::decay_t<decltype(std::get<order - 1>(std::declval<MeshVariant>()))>;
+using MeshType = std::variant_alternative_t<order-1, MeshVariant>;
 
 MeshVariant read_mesh(const char *name, int order);
 
