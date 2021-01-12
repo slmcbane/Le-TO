@@ -1,5 +1,5 @@
 #include "ersatz_stiffness.hpp"
-#include "forward_model.hpp"
+#include "evaluator.hpp"
 #include "options.hpp"
 #include "save_eigen.hpp"
 
@@ -21,12 +21,12 @@ int main()
 
     Eigen::Vector2d force(0.0, -force_magnitude);
 
-    std::unique_ptr<ModelInfoVariant> minfo =
-        construct_model_info(mesh_file, order, force, interp, filter_radius, lambda, mu);
+    Evaluator evaluator(mesh_file, order, force, interp, filter_radius, lambda, mu);
 
-    Eigen::VectorXd rho(num_elements(*minfo));
+    Eigen::VectorXd rho(num_elements(evaluator.model_info()));
     rho.fill(1);
-    const auto &u = solve_forward(*minfo, rho);
+    evaluator.set_parameter(rho.data());
+    const auto &u = evaluator.displacement();
 
     save_eigen(u, "u.dat");
 

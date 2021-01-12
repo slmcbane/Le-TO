@@ -8,7 +8,6 @@
 #include "read_mesh.hpp"
 
 #include <Eigen/Sparse>
-#include <iostream>
 
 #include <memory>
 
@@ -36,7 +35,7 @@ struct ModelInfo
     std::vector<size_t> homogeneous_boundaries;
 
     // Store filtered values of the density variable.
-    std::vector<double> rho_filt;
+    Eigen::VectorXd rho_filt;
 
     // Storage for the forward stiffness matrix.
     stiffness_matrix_t forward_stiffness;
@@ -75,8 +74,7 @@ std::unique_ptr<ModelInfoVariant> construct_model_info(
     double filt_radius, double lambda, double mu);
 
 // And this one.
-template <class Vector>
-const Eigen::VectorXd &solve_forward(ModelInfoVariant &minfo, const Vector &rho);
+void update_model_info(ModelInfoVariant &minfo, const double *rho);
 
 std::size_t ndofs(const ModelInfoVariant &minfo);
 std::size_t num_elements(const ModelInfoVariant &minfo);
@@ -117,12 +115,11 @@ template <class Mesh, class Vec>
 void update_model_info(ModelInfo<Mesh> &minfo, const Vec &rho)
 {
     filter_densities(minfo.rho_filt, rho, minfo.filter);
-    //minfo.forward_stiffness.reset();
-    /*for (std::size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
+    minfo.forward_stiffness.reset();
+    for (std::size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
     {
         update_forward_stiffness(minfo, eli);
-    }*/
-    minfo.forward_stiffness = Elasticity::TwoD::assemble_stiffness(minfo.mesh, 100, 0.3);
+    }
     for (std::size_t which : minfo.homogeneous_boundaries)
     {
         Elasticity::TwoD::impose_homogeneous_condition(minfo.mesh, minfo.forward_stiffness, which);
@@ -251,25 +248,12 @@ void compute_pressure_force(
     }
 
     work = (M * work).eval();
-    std::cout << work;
 
     for (std::size_t i = 0; i < boundary.nodes.size(); ++i)
     {
         std::size_t node = boundary.nodes[i];
         nodal_forcing.segment(node * 2, 2) += work.segment(i * 2, 2);
     }
-}
-
-template <class Vector>
-const Eigen::VectorXd &solve_forward(ModelInfoVariant &minfo, const Vector &rho)
-{
-    return *std::visit(
-        [&](auto &minfo) {
-            update_model_info(minfo, rho);
-            minfo.displacement = minfo.factorized.solve(minfo.nodal_forcing);
-            return &minfo.displacement;
-        },
-        minfo);
 }
 
 #endif // FORWARD_MODEL_HPP

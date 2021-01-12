@@ -61,3 +61,11 @@ std::size_t num_elements(const ModelInfoVariant &minfo)
 {
     return std::visit([](const auto &minfo) { return minfo.mesh.num_elements(); }, minfo);
 }
+
+void update_model_info(ModelInfoVariant &minfo, const double *rho)
+{
+    std::visit([rho](auto &m)
+    {
+        update_model_info(m, Eigen::Map<const Eigen::VectorXd>(rho, m.mesh.num_elements()));
+    }, minfo);
+}

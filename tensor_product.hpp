@@ -9,8 +9,8 @@
  * Compute $\partial K/\partial rho times the displacement vector.
  * Assumes that the problem has already been solved for displacement.
  */
-template <class U, class V>
-void evaluate_tensor_product(U &grad, const V &v, const ModelInfo<MeshType<1>> &minfo)
+template <class U, class V, class Mesh>
+void evaluate_tensor_product(U &grad, const V &v, const ModelInfo<Mesh> &minfo)
 {
     assert(grad.size() == minfo.mesh.num_elements());
     assert(v.size() == 2 * minfo.mesh.num_nodes());
@@ -18,7 +18,7 @@ void evaluate_tensor_product(U &grad, const V &v, const ModelInfo<MeshType<1>> &
 
     grad.fill(0);
     const auto &refmats = minfo.ref_stiffness_matrices;
-    Eigen::Matrix<double, ModelInfo<MeshType<1>>::el_stiffness_matrix_t::RowsAtCompileTime, 1> uel, vel;
+    Eigen::Matrix<double, ModelInfo<Mesh>::el_stiffness_matrix_t::RowsAtCompileTime, 1> uel, vel;
 
     for (std::size_t i = 0; i < minfo.mesh.num_elements(); ++i)
     {
