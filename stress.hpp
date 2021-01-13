@@ -35,8 +35,8 @@ AggregationRegions assign_agg_regions(const Eigen::VectorXd &cc_stress, std::siz
  * in a single pass over the domain (with linear solve).
  */
 void pnorm_aggs_with_jacobian(
-    Eigen::VectorXd &aggs, Eigen::MatrixXd &J, Eigen::VectorXd &cc_stress,
-    const StressCriterionDefinition &def, const ModelInfoVariant &minfo, double lambda, double mu,
-    Eigen::MatrixXd &workspace);
+    Eigen::VectorXd &aggs, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> &J,
+    Eigen::VectorXd &cc_stress, const StressCriterionDefinition &def, const ModelInfoVariant &minfo,
+    double lambda, double mu, Eigen::MatrixXd &workspace, Eigen::MatrixXd &workspace2);
 
 #endif // STRESS_COMPUTATIONS_HPP
