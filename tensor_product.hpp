@@ -16,7 +16,6 @@ void evaluate_tensor_product(U &grad, const V &v, const ModelInfo<Mesh> &minfo)
     assert(v.size() == 2 * minfo.mesh.num_nodes());
     assert(minfo.rho_filt.size() == minfo.mesh.num_elements());
 
-    grad.fill(0);
     const auto &refmats = minfo.ref_stiffness_matrices;
     Eigen::Matrix<double, ModelInfo<Mesh>::el_stiffness_matrix_t::RowsAtCompileTime, 1> uel, vel;
 
