@@ -6,7 +6,9 @@ void Evaluator::set_parameter(const double *rho)
     update_model_info(*m_minfo, rho);
     parameter_set = true;
     solved_forward = compliance_computed = compliance_gradient_computed = false;
+    cc_stress_computed = aggregates_computed = aggj_computed = false;
 }
+
 
 void Evaluator::solve_forward()
 {
@@ -50,7 +52,7 @@ void Evaluator::compute_compliance()
 
 void Evaluator::compute_compliance_gradient()
 {
-    compliance_gradient_value.resize(num_elements(*m_minfo));
+    compliance_gradient_value = Eigen::VectorXd::Zero(num_elements(*m_minfo));
 
     std::visit(
         [&](const auto &minfo) {
@@ -83,6 +85,10 @@ const Eigen::VectorXd &Evaluator::cell_centered_stress()
 
 void Evaluator::compute_cc_stress()
 {
+    if (!solved_forward)
+    {
+        solve_forward();
+    }
     cc_stress_value.resize(num_elements(*m_minfo));
     ::cell_centered_stress(cc_stress_value, *m_minfo, lambda, mu);
     cc_stress_computed = true;
@@ -100,12 +106,13 @@ const Eigen::VectorXd &Evaluator::stress_aggregates()
 
 void Evaluator::compute_aggregates()
 {
+    check_stress_defined();
     if (!solved_forward)
     {
         solve_forward();
     }
 
-    pnorm_stress_aggregates(aggregate_values, cc_stress_value, stress_criterion, *m_minfo, lambda, mu);
+    pnorm_stress_aggregates(aggregate_values, cc_stress_value, *stress_criterion, *m_minfo, lambda, mu);
 
     cc_stress_computed = true;
     aggregates_computed = true;
@@ -123,12 +130,17 @@ const decltype(Evaluator::agg_jacobian) &Evaluator::stress_agg_jacobian()
 
 void Evaluator::compute_aggregates_and_jac()
 {
+    check_stress_defined();
     if (!solved_forward)
     {
         solve_forward();
     }
 
     pnorm_aggs_with_jacobian(
-        aggregate_values, agg_jacobian, cc_stress_value, stress_criterion, *m_minfo, lambda, mu, workspace,
+        aggregate_values, agg_jacobian, cc_stress_value, *stress_criterion, *m_minfo, lambda, mu, workspace,
         workspace2);
+
+    cc_stress_computed = true;
+    aggregates_computed = true;
+    aggj_computed = true;
 }

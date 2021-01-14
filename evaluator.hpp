@@ -6,18 +6,21 @@
 #include "stress.hpp"
 #include "tensor_product.hpp"
 
+#include <optional>
+
+#define FMT_HEADER_ONLY
+#include "fmt/format.h"
+
 class Evaluator
 {
   public:
     Evaluator(
         const std::string &mesh_file, int order, Eigen::Vector2d force, ErsatzStiffness interp,
-        double filt_radius, double lambda, double mu, const AggregationRegions &agg_regions,
-        const StressCriterionDefinition &stress_criterion)
+        double filt_radius, double lambda, double mu)
         : m_minfo(construct_model_info(mesh_file, order, force, interp, filt_radius, lambda, mu)),
           parameter_set{false}, solved_forward{false}, compliance_computed{false},
           compliance_gradient_computed{false}, cc_stress_computed{false}, aggregates_computed{false},
-          aggj_computed{false}, agg_regions(agg_regions),
-          stress_criterion(stress_criterion), lambda{lambda}, mu{mu}
+          aggj_computed{false}, lambda{lambda}, mu{mu}
     {
     }
 
@@ -36,6 +39,11 @@ class Evaluator
     const Eigen::VectorXd &stress_aggregates();
 
     const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> &stress_agg_jacobian();
+
+    void set_stress_criterion(StressCriterionDefinition &&criterion)
+    {
+        stress_criterion = std::move(criterion);
+    }
 
   private:
     std::unique_ptr<ModelInfoVariant> m_minfo;
@@ -59,8 +67,7 @@ class Evaluator
     double compliance_value;
     Eigen::VectorXd compliance_gradient_value;
 
-    AggregationRegions agg_regions;
-    StressCriterionDefinition stress_criterion;
+    std::optional<StressCriterionDefinition> stress_criterion;
 
     Eigen::VectorXd cc_stress_value;
     Eigen::VectorXd aggregate_values;
@@ -68,6 +75,17 @@ class Evaluator
     Eigen::MatrixXd workspace, workspace2;
 
     double lambda, mu;
+
+    void check_stress_defined()
+    {
+        if (!stress_criterion)
+        {
+            fmt::print(
+                stderr, "Use set_stress_criterion to define the stress aggregation scheme before using "
+                        "aggregation functions\n");
+            exit(3);
+        }
+    }
 };
 
 #endif // EVALUATOR_HPP

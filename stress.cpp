@@ -46,6 +46,25 @@ void cell_centered_stress(
     }
 }
 
+template <class Mesh>
+void eliminate_essential_boundaries(
+    Eigen::MatrixXd &workspace, const ModelInfo<Mesh> &minfo)
+{
+    assert(workspace.rows() == 2 * minfo.mesh.num_nodes());
+    for (int j = 0; j < workspace.cols(); ++j)
+    {
+        for (std::size_t which : minfo.homogeneous_boundaries)
+        {
+            const auto &bound = minfo.mesh.boundary(which);
+            for (auto n : bound.nodes)
+            {
+                workspace(2*n, j) = 0;
+                workspace(2*n+1, j) = 0;
+            }
+        }
+    }
+}
+
 } // namespace
 
 void cell_centered_stress(Eigen::VectorXd &dest, const ModelInfoVariant &minfo, double lambda, double mu)
@@ -62,6 +81,7 @@ void pnorm_stress_aggregates(
     const ModelInfoVariant &minfo, double lambda, double mu)
 {
     aggregates = Eigen::VectorXd::Zero(def.agg_regions.n);
+    auto counts = std::vector<int>(aggregates.size(), 0);
     std::visit(
         [&, lambda, mu](const auto &minfo) {
             cc_stress.resize(minfo.mesh.num_elements());
@@ -71,10 +91,11 @@ void pnorm_stress_aggregates(
                 cc_stress[eli] = cell_centered_stress(u, minfo.mesh, lambda, mu, eli);
                 double sigma = def.stiffness_interp(minfo.rho_filt[eli]) * cc_stress[eli];
                 aggregates[def.agg_regions.assignments[eli]] += std::pow(sigma, def.p);
+                counts[def.agg_regions.assignments[eli]] += 1;
             }
             for (int i = 0; i < aggregates.size(); ++i)
             {
-                aggregates[i] = std::pow(aggregates[i], 1.0 / def.p);
+                aggregates[i] = std::pow(aggregates[i] / counts[i], 1.0 / def.p);
             }
         },
         minfo);
@@ -90,7 +111,8 @@ AggregationRegions assign_agg_regions(const Eigen::VectorXd &cc_stress, std::siz
     }
 
     std::sort(indices.begin(), indices.end(), [&](auto i, auto j) { return cc_stress[i] < cc_stress[j]; });
-    AggregationRegions agg_regions{n, {}};
+    AggregationRegions agg_regions;
+    agg_regions.n = n;
     agg_regions.assignments.resize(indices.size());
 
     for (std::size_t i = 0; i < indices.size(); ++i)
@@ -107,6 +129,7 @@ void pnorm_aggs_with_jacobian(
     double lambda, double mu, Eigen::MatrixXd &workspace, Eigen::MatrixXd &workspace2)
 {
     aggs = Eigen::VectorXd::Zero(def.agg_regions.n);
+    auto counts = std::vector<int>(aggs.size(), 0);
     std::visit(
         [&](const auto &minfo) {
             J = std::decay_t<decltype(J)>::Zero(def.agg_regions.n, minfo.mesh.num_elements());
@@ -126,10 +149,14 @@ void pnorm_aggs_with_jacobian(
                 auto [sigma, dsigmadu] = cell_centered_stress_w_gradient(u, minfo.mesh, lambda, mu, eli);
                 cc_stress[eli] = sigma;
                 sigma *= s(minfo.rho_filt[eli]);
-                dsigmadu *= s(minfo.rho_filt[eli]);
+                for (int i = 0; i < dsigmadu.size(); ++i)
+                {
+                    dsigmadu[i] *= s(minfo.rho_filt[eli]);
+                }
 
                 // update p-norm aggregate accumulator.
                 aggs[agg_index] += std::pow(sigma, def.p);
+                counts[agg_index] += 1;
 
                 // partial of p-norm aggregate w.r.t. this relaxed stress, modulo a constant.
                 double dpndsigma = std::pow(sigma, def.p - 1);
@@ -159,14 +186,19 @@ void pnorm_aggs_with_jacobian(
             // subtract, and multiply by constants.
             // These constants are given by the p-norm aggregate divided by the sum inside the
             // p norm.
-            workspace2 = -minfo.factorized.solve(workspace);
             for (int i = 0; i < aggs.size(); ++i)
             {
                 double c = aggs[i];
-                aggs[i] = std::pow(aggs[i], 1.0 / def.p);
+                aggs[i] = std::pow(aggs[i] / counts[i], 1.0 / def.p);
+                J.row(i) *= aggs[i] / c;
+                workspace.col(i) *= aggs[i] / c;
+            }
+            eliminate_essential_boundaries(workspace, minfo);
+            workspace2 = -minfo.factorized.solve(workspace);
+            for (int i = 0; i < aggs.size(); ++i)
+            {
                 auto Jrow = J.row(i);
                 evaluate_tensor_product(Jrow, workspace2.col(i), minfo);
-                J.row(i) *= c * aggs[i];
             }
         },
         minfo);

@@ -83,27 +83,113 @@ constexpr auto tuple_tail(const std::array<T, N> &a) noexcept
     static_assert(N > 0, "Can't take tail for 0-element array");
     return tuple_tail_impl(std::make_index_sequence<N-1>(), a);
 }
+namespace
+{
+
+template <std::size_t BEGIN, std::size_t STEP, std::size_t... Is>
+constexpr auto stepped_sequence_impl(std::index_sequence<Is...>) noexcept
+{
+    return std::index_sequence<(BEGIN + STEP * Is)...>{};
+}
+
+template <std::size_t BEGIN, std::size_t END, std::size_t STEP>
+constexpr auto make_stepped_sequence() noexcept
+{
+    constexpr auto num_steps = (END - BEGIN) / STEP + ((END - BEGIN) % STEP != 0);
+    constexpr auto counting_sequence = std::make_index_sequence<num_steps>();
+    return stepped_sequence_impl<BEGIN, STEP>(counting_sequence);
+}
+
+template <class Comb, class T, class... Args>
+struct ApplyCombinator;
+
+template <class Comb, class T>
+struct ApplyCombinator<Comb, T>
+{
+    const Comb m_comb;
+    const T m_init;
+    constexpr ApplyCombinator(const Comb &c, const T &x) : m_comb(c), m_init(x) {}
+    constexpr auto operator()() const noexcept { return m_init; }
+};
+
+template <class Comb, class T, class S>
+struct ApplyCombinator<Comb, T, S>
+{
+    const Comb m_comb;
+    const T m_init;
+    constexpr ApplyCombinator(const Comb &c, const T &x) : m_comb(c), m_init(x) {}
+
+    constexpr auto operator()(S &&y) const { return m_comb(m_init, std::forward<S>(y)); }
+};
+
+template <class Comb, class X, class Y, class... Zs>
+struct ApplyCombinator<Comb, X, Y, Zs...>
+{
+    const Comb m_comb;
+    const X m_init;
+    constexpr ApplyCombinator(const Comb &c, const X &x) : m_comb(c), m_init(x) {}
+
+    constexpr auto operator()(Y &&y, Zs &&... zs)
+    {
+        const auto first = m_comb(m_init, std::forward<Y>(y));
+        return ApplyCombinator<Comb, decltype(first), Zs...>(m_comb, first)(std::forward<Zs>(zs)...);
+    }
+};
+
+template <class COMB, class T, class... Args>
+constexpr auto apply_combinator(const COMB &c, T x, Args &&... args)
+{
+    return ApplyCombinator<COMB, T, Args...>(c, x)(std::forward<Args>(args)...);
+}
+
+template <class F, class COMB, class T, std::size_t... Is>
+constexpr auto static_reduce_impl(const F &f, T x, const COMB &c, std::index_sequence<Is...>)
+{
+    if constexpr (sizeof...(Is) == 0)
+    {
+        return x;
+    }
+    else
+    {
+        return apply_combinator(c, x, f(std::integral_constant<std::size_t, Is>{})...);
+    }
+}
+
+template <class F, std::size_t... Is>
+constexpr void static_for_impl(const F &f, std::index_sequence<Is...>)
+{
+    if constexpr (sizeof...(Is) == 0)
+    {
+        return;
+    }
+    else
+    {
+        [[maybe_unused]] int i = (f(std::integral_constant<std::size_t, Is>{}), ..., 0);
+    }
+}
+
+} // namespace
 
 /*!
  * @brief Do an arbitrary reduction on possibly compile-time expressions.
- * 
+ *
  * This performs the reduction
- * 
+ *
  *     auto y = x;
  *     for (auto i = BEGIN; i < END; i += STEP)
  *     {
  *         y = c(y, f(i));
  *     }
  *     return y;
- * 
+ *
  * The above loop must be "type-stable", but this facility performs the operation
  * in a recursive manner so the type of `y` might change every loop iteration.
  * In addition, `f` receives the "loop index" as an `integral_constant` so that
  * the function argument can be used to specify a template parameter (e.g. `std::get`).
- * 
+ *
  * Useful for doing sums and products with compile-time types like `Rational` and
  * `Multinomial`.
- * 
+ *
  * @tparam BEGIN The initial value for the reduction loop
  * @tparam END The end value for the reduction loop; range is `[BEGIN, END)`.
  * @tparam STEP The increment between evaluations.
@@ -112,13 +198,14 @@ constexpr auto tuple_tail(const std::array<T, N> &a) noexcept
  * `one<T>` for a product.
  * @param[in] c A callable taking two objects `x` and `y` and returning a single
  * value; for example, `operator+` to perform a summation.
- * 
+ *
  * @returns The reduction using `x` as an initial value.
  */
 template <auto BEGIN, auto END, auto STEP, class F, class COMB, class T>
-constexpr auto static_reduce(F&& f, T x, COMB&& c)
+constexpr auto static_reduce(const F &f, T x, const COMB &c)
 {
-    if constexpr (BEGIN >= END)
+    return static_reduce_impl(f, x, c, make_stepped_sequence<BEGIN, END, STEP>());
+    /*if constexpr (BEGIN >= END)
     {
         return x;
     }
@@ -128,13 +215,14 @@ constexpr auto static_reduce(F&& f, T x, COMB&& c)
         return static_reduce<BEGIN+STEP, END, STEP>(
             std::forward<F>(f), std::forward<COMB>(c)(x, y), std::forward<COMB>(c)
         );
-    }
+    }*/
 }
 
 template <auto BEGIN, auto END, auto STEP, class F>
-constexpr void static_for(F&& f)
+constexpr void static_for(F &&f)
 {
-    if constexpr (BEGIN >= END)
+    static_for_impl(f, make_stepped_sequence<BEGIN, END, STEP>());
+    /*if constexpr (BEGIN >= END)
     {
         return;
     }
@@ -142,7 +230,7 @@ constexpr void static_for(F&& f)
     {
         std::forward<F>(f)(std::integral_constant<decltype(BEGIN), BEGIN>());
         static_for<BEGIN+STEP, END, STEP>(std::forward<F>(f));
-    }
+    }*/
 }
 
 /*!

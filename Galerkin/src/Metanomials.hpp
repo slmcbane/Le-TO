@@ -269,14 +269,14 @@ struct Metanomial : public typeconst_list<Terms...>, public Functions::FunctionB
                   "The number of variables in all terms of a Metanomial must be equal");
 
     template <class... Types>
-    constexpr auto operator()(Types... args) const noexcept
+    constexpr auto operator()(const Types&... args) const noexcept
     {
-        auto tup = std::tuple(args...);
+        auto tup = std::tie(args...);
         return this->operator()(tup);
     }
 
     template <class... Types>
-    constexpr auto operator()(std::tuple<Types...> args) const noexcept
+    constexpr auto operator()([[maybe_unused]] const std::tuple<Types...> &args) const noexcept
     {
         if constexpr (sizeof...(Terms) == 0)
         {
@@ -285,7 +285,7 @@ struct Metanomial : public typeconst_list<Terms...>, public Functions::FunctionB
         else
         {
             return static_sum<1, sizeof...(Terms)>(
-                [=](auto I) {
+                [&](auto I) {
                     return get<I()>(static_cast<typeconst_list<Terms...>>(*this))(args);
                 },
                 this->head()(args));
@@ -302,7 +302,7 @@ struct Metanomial : public typeconst_list<Terms...>, public Functions::FunctionB
         else
         {
             return static_sum<1, sizeof...(Terms)>(
-                [=](auto I) {
+                [&](auto I) {
                     return get<I()>(static_cast<typeconst_list<Terms...>>(*this))(args);
                 },
                 this->head()(args)

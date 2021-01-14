@@ -1,6 +1,7 @@
 #ifndef STRESS_COMPUTATIONS_HPP
 #define STRESS_COMPUTATIONS_HPP
 
+#define FMT_HEADER_ONLY
 #include "fmt/format.h"
 #include "forward_model.hpp"
 #include "von_mises.hpp"
@@ -11,6 +12,13 @@ struct AggregationRegions
 {
     std::size_t n;
     std::vector<std::size_t> assignments;
+
+    AggregationRegions(std::size_t num_elements) : n{1}
+    {
+        assignments.resize(num_elements, 0);
+    }
+
+    AggregationRegions() = default;
 };
 
 struct StressCriterionDefinition

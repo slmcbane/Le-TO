@@ -35,9 +35,9 @@ void evaluate_tensor_product(U &grad, const V &v, const ModelInfo<Mesh> &minfo)
         }
 
         const double vTdKdrhou = dsdrho * vel.dot(Kel * uel);
-        for (unsigned i = 0; i < efilt.entries.size(); ++i)
+        for (auto [ri, w] : efilt.entries)
         {
-            grad[efilt.entries[i].index] += efilt.entries[i].weight * vTdKdrhou;
+            grad[ri] += w * vTdKdrhou;
         }
     }
 }

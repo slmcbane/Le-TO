@@ -1,7 +1,7 @@
 mesh_file = "lbracket.msh"
 mesh_order = 1
 force_magnitude = 0.1
-filter_radius = 0.01
+filter_radius = 0.02
 
 [Material]
 epsilon_constitutive = 1e-3
@@ -11,3 +11,7 @@ stress_exponent = 0.5
 youngs_modulus = 100.0
 youngs_modulus_stress = 100.0
 poissons_ratio = 0.3
+
+[Aggregation]
+num_aggregation_regions = 5
+aggregation_multiplier = 8

@@ -67,7 +67,7 @@ struct VonMisesComputer
     }
 
   private:
-    const Element &el;
+    const Element el;
     Eigen::Matrix<double, 2 * Element::basis.size(), 1> coeffs;
     double lambda, mu;
 
