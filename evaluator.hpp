@@ -20,8 +20,9 @@ class Evaluator
         : m_minfo(construct_model_info(mesh_file, order, force, interp, filt_radius, lambda, mu)),
           parameter_set{false}, solved_forward{false}, compliance_computed{false},
           compliance_gradient_computed{false}, cc_stress_computed{false}, aggregates_computed{false},
-          aggj_computed{false}, lambda{lambda}, mu{mu}
+          aggj_computed{false}, lambda{lambda}, mu{mu}, relative_areas(num_elements(*m_minfo), 0)
     {
+        compute_relative_areas();
     }
 
     const Eigen::VectorXd &displacement();
@@ -44,6 +45,16 @@ class Evaluator
     {
         stress_criterion = std::move(criterion);
     }
+
+    auto num_aggregates() const
+    {
+        check_stress_defined();
+        return stress_criterion->agg_regions.n;
+    }
+
+    const std::vector<double> &relative_masses() const { return relative_areas; }
+
+    double sum_mass_times_density() const;
 
   private:
     std::unique_ptr<ModelInfoVariant> m_minfo;
@@ -76,7 +87,9 @@ class Evaluator
 
     double lambda, mu;
 
-    void check_stress_defined()
+    std::vector<double> relative_areas;
+
+    void check_stress_defined() const
     {
         if (!stress_criterion)
         {
@@ -86,6 +99,8 @@ class Evaluator
             exit(3);
         }
     }
+
+    void compute_relative_areas();
 };
 
 #endif // EVALUATOR_HPP

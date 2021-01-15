@@ -1,4 +1,5 @@
 #include "evaluator.hpp"
+#include "2d.hpp"
 #include "stress.hpp"
 
 void Evaluator::set_parameter(const double *rho)
@@ -8,7 +9,6 @@ void Evaluator::set_parameter(const double *rho)
     solved_forward = compliance_computed = compliance_gradient_computed = false;
     cc_stress_computed = aggregates_computed = aggj_computed = false;
 }
-
 
 void Evaluator::solve_forward()
 {
@@ -143,4 +143,36 @@ void Evaluator::compute_aggregates_and_jac()
     cc_stress_computed = true;
     aggregates_computed = true;
     aggj_computed = true;
+}
+
+void Evaluator::compute_relative_areas()
+{
+    double total_area = 0;
+    std::visit(
+        [&](const auto &minfo) {
+            const auto &mesh = minfo.mesh;
+            for (std::size_t eli = 0; eli < mesh.num_elements(); ++eli)
+            {
+                const auto el = Elasticity::TwoD::instantiate_element(mesh, eli);
+                relative_areas[eli] = el.integrate(
+                    []([[maybe_unused]] auto x) { return 1; }, Galerkin::IntegrationOrder<1>{});
+                total_area += relative_areas[eli];
+            }
+        },
+        *m_minfo);
+    for (double &x : relative_areas)
+    {
+        x /= total_area;
+    }
+}
+
+double Evaluator::sum_mass_times_density() const
+{
+    const auto &rho = *std::visit([&](const auto &minfo) { return &minfo.rho_filt; }, *m_minfo);
+    double sum = 0;
+    for (std::size_t eli = 0; eli < static_cast<unsigned>(rho.size()); ++eli)
+    {
+        sum += rho[eli] * relative_areas[eli];
+    }
+    return sum;
 }
