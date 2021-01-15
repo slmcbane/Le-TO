@@ -5,6 +5,7 @@
 void Evaluator::set_parameter(const double *rho)
 {
     update_model_info(*m_minfo, rho);
+    parameter_value = Eigen::Map<const Eigen::VectorXd>(rho, num_elements(*m_minfo));
     parameter_set = true;
     solved_forward = compliance_computed = compliance_gradient_computed = false;
     cc_stress_computed = aggregates_computed = aggj_computed = false;
@@ -155,7 +156,7 @@ void Evaluator::compute_relative_areas()
             {
                 const auto el = Elasticity::TwoD::instantiate_element(mesh, eli);
                 relative_areas[eli] = el.integrate(
-                    []([[maybe_unused]] auto x) { return 1; }, Galerkin::IntegrationOrder<1>{});
+                    Galerkin::Functions::ConstantFunction<int>(1), Galerkin::IntegrationOrder<1>{});
                 total_area += relative_areas[eli];
             }
         },
@@ -175,4 +176,30 @@ double Evaluator::sum_mass_times_density() const
         sum += rho[eli] * relative_areas[eli];
     }
     return sum;
+}
+
+Eigen::VectorXd Evaluator::max_stresses()
+{
+    check_stress_defined();
+    const Eigen::VectorXd &cc_stress = cell_centered_stress();
+
+    const auto &assignments = stress_criterion->agg_regions.assignments;
+
+    Eigen::VectorXd max_stress = Eigen::VectorXd::Zero(stress_criterion->agg_regions.n);
+    for (std::size_t eli = 0; eli < assignments.size(); ++eli)
+    {
+        std::size_t agg_index = assignments[eli];
+        if (cc_stress[agg_index] > max_stress[agg_index])
+        {
+            max_stress[agg_index] = cc_stress[agg_index];
+        }
+    }
+    return max_stress;
+}
+
+void Evaluator::reassign_aggregation_regions()
+{
+    check_stress_defined();
+    stress_criterion->agg_regions =
+        assign_agg_regions(cell_centered_stress(), stress_criterion->agg_regions.n);
 }

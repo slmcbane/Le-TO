@@ -140,10 +140,28 @@ void parse_aggregation_options(const toml::table &options, AggregationOptions &a
 }
 
 constexpr inline const char *opt_option_names[] = {
-    "max_iters",    "absolute_tol",       "acceptable_tol",   "acceptable_iters", "accept_every_trial_step",
-    "mass_scaling", "compliance_scaling", "compliance_limit", "stress_scaling",   "stress_limit",
-    "mass_limit",   "mean_change_iters",  "mean_change_tol",  "verbosity_level",  "xtol_rel",
-    "xtol_abs",     "ftol_rel",           "ftol_abs",         "maxtime",          "optimization_type"};
+    "max_iters",
+    "absolute_tol",
+    "acceptable_tol",
+    "acceptable_iters",
+    "accept_every_trial_step",
+    "mass_scaling",
+    "compliance_scaling",
+    "compliance_limit",
+    "stress_scaling",
+    "stress_limit",
+    "mass_limit",
+    "mean_change_iters",
+    "mean_change_tol",
+    "verbosity_level",
+    "xtol_rel",
+    "xtol_abs",
+    "ftol_rel",
+    "ftol_abs",
+    "maxtime",
+    "optimization_type",
+    "reassign_regions_interval",
+    "stress_alpha"};
 
 template <class T>
 void set_value(OptimizationOptions &options, const char *what, T value)
@@ -226,10 +244,14 @@ void set_value(OptimizationOptions &options, const char *what, T value)
         {
             options.stress_limit = value;
         }
+        else if (what[7] == 's')
+        {
+            options.stress_scaling = value;
+        }
         else
         {
-            assert(what[7] == 's');
-            options.stress_scaling = value;
+            assert(what[7] == 'a');
+            options.stress_alpha = value;
         }
         break;
     case 'v':
@@ -267,6 +289,9 @@ void set_value(OptimizationOptions &options, const char *what, T value)
             assert(what[11] == 'l');
             options.compliance_limit = value;
         }
+        break;
+    case 'r':
+        options.reassign_regions_interval = value;
         break;
     default:;
     }

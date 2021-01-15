@@ -78,6 +78,9 @@ struct OptimizationOptions
     std::optional<double> ftol_abs;
     std::optional<double> maxtime;
 
+    std::optional<int> reassign_regions_interval;
+    std::optional<double> stress_alpha;
+
     OptimizationOptions() {}
 };
 

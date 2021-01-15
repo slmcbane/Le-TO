@@ -39,6 +39,10 @@ class Evaluator
 
     const Eigen::VectorXd &stress_aggregates();
 
+    Eigen::VectorXd max_stresses();
+
+    void reassign_aggregation_regions();
+
     const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> &stress_agg_jacobian();
 
     void set_stress_criterion(StressCriterionDefinition &&criterion)
@@ -56,8 +60,11 @@ class Evaluator
 
     double sum_mass_times_density() const;
 
+    const Eigen::VectorXd &parameter() const { return parameter_value; }
+
   private:
     std::unique_ptr<ModelInfoVariant> m_minfo;
+    Eigen::VectorXd parameter_value;
 
     bool parameter_set;
     bool solved_forward;

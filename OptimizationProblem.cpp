@@ -175,6 +175,7 @@ bool OptimizationProblem::eval_jac_g(
                 offset += 1;
             }
         }
+        return true;
     }
     else
     {
@@ -204,5 +205,45 @@ bool OptimizationProblem::eval_jac_g(
         default:
             return false;
         }
+    }
+}
+
+bool OptimizationProblem::intermediate_callback(
+    Ipopt::AlgorithmMode, Index, double, double, double, double, double, double, double, double, Index,
+    const Ipopt::IpoptData *, Ipopt::IpoptCalculatedQuantities *)
+{
+    update_mean_changes();
+    if (m_mean_change.mean() < m_options.mean_change_tol.value())
+    {
+        return false;
+    }
+
+    update_stress_normalization();
+    maybe_update_region_definitions();
+
+    m_iter += 1;
+
+    return true;
+}
+
+void OptimizationProblem::update_mean_changes()
+{
+    m_mean_change[m_iter % m_mean_change.size()] =
+        (m_evaluator.parameter() - m_last_parameter).cwiseAbs().mean();
+    m_last_parameter = m_evaluator.parameter();
+}
+
+void OptimizationProblem::update_stress_normalization()
+{
+    Eigen::VectorXd max_stresses = m_evaluator.max_stresses();
+    m_stress_normalization = m_stress_alpha * max_stresses.cwiseQuotient(m_evaluator.stress_aggregates()) +
+        (1 - m_stress_alpha) * m_stress_normalization;
+}
+
+void OptimizationProblem::maybe_update_region_definitions()
+{
+    if (m_iter % m_reassign_interval == 0 && m_iter != 0)
+    {
+        m_evaluator.reassign_aggregation_regions();
     }
 }

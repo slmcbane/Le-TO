@@ -14,4 +14,20 @@ poissons_ratio = 0.3
 
 [Aggregation]
 num_aggregation_regions = 5
-aggregation_multiplier = 8
+aggregation_multiplier = 6
+
+[Optimization]
+# If NLOpt is used, max_iters is actually max function evaluations.
+max_iters = 1
+absolute_tol = 1e-8
+acceptable_tol = 1e-6
+acceptable_iters = 10
+accept_every_trial_step = false
+compliance_limit = 40
+stress_limit = 0.3
+mass_limit = 350
+mean_change_iters = 10
+mean_change_tol = 0
+verbosity_level = 4
+reassign_regions_interval = 10000
+stress_alpha = 0.5
