@@ -115,9 +115,17 @@ AggregationRegions assign_agg_regions(const Eigen::VectorXd &cc_stress, std::siz
     agg_regions.n = n;
     agg_regions.assignments.resize(indices.size());
 
-    for (std::size_t i = 0; i < indices.size(); ++i)
+    std::size_t index = 0;
+    for (std::size_t region = 0; region < n; ++region)
     {
-        agg_regions.assignments[indices[i]] = i % n;
+        for (std::size_t i = 0; i < indices.size() / n; ++i)
+        {
+            agg_regions.assignments[index++] = region;
+        }
+    }
+    for (; index < agg_regions.assignments.size(); ++index)
+    {
+        agg_regions.assignments[index] = n - 1;
     }
 
     return agg_regions;
