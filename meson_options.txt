@@ -1,0 +1,3 @@
+option('ipopt_dir', type : 'string', value : '/nonexistent/path')
+
+option('blaslib', type : 'string', value : 'openblas')

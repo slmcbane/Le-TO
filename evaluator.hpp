@@ -62,6 +62,11 @@ class Evaluator
 
     const Eigen::VectorXd &parameter() const { return parameter_value; }
 
+    const Eigen::VectorXd &filtered_parameter() const
+    {
+        return *std::visit([&](const auto &minfo) { return &minfo.rho_filt; }, *m_minfo);
+    }
+
   private:
     std::unique_ptr<ModelInfoVariant> m_minfo;
     Eigen::VectorXd parameter_value;

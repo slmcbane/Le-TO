@@ -43,13 +43,13 @@ class OptimizationProblem : public Ipopt::TNLP
         const double *g, const double *, double obj_value, const Ipopt::IpoptData *,
         Ipopt::IpoptCalculatedQuantities *)
     {
-        m_optimal_values = std::vector<double>(x, x + n);
-        m_constraint_values = std::vector<double>(g, g + m);
+        m_optimal_values = Eigen::Map<const Eigen::VectorXd>(x, n);
+        m_constraint_values = Eigen::Map<const Eigen::VectorXd>(g, m);
         m_obj_value = obj_value;
     }
 
-    const std::vector<double> &optimal_values() const { return m_optimal_values; }
-    const std::vector<double> &constraint_values() const { return m_constraint_values; }
+    const Eigen::VectorXd &optimal_values() const { return m_optimal_values; }
+    const Eigen::VectorXd &constraint_values() const { return m_constraint_values; }
     double objective() const { return m_obj_value; }
 
     bool intermediate_callback(
@@ -78,13 +78,14 @@ class OptimizationProblem : public Ipopt::TNLP
 
     void maybe_update_parameter(const double *x, bool new_x)
     {
+        m_last_parameter = Eigen::Map<const Eigen::VectorXd>(x, num_elements(m_evaluator.model_info()));
         if (new_x)
         {
             m_evaluator.set_parameter(x);
         }
     }
 
-    std::vector<double> m_optimal_values, m_constraint_values;
+    Eigen::VectorXd m_optimal_values, m_constraint_values;
     double m_obj_value;
 
     void update_mean_changes();

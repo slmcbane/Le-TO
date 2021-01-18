@@ -92,6 +92,12 @@ void Evaluator::compute_cc_stress()
     }
     cc_stress_value.resize(num_elements(*m_minfo));
     ::cell_centered_stress(cc_stress_value, *m_minfo, lambda, mu);
+
+    const auto &rho = filtered_parameter();
+    for (std::size_t eli = 0; eli < rho.size(); ++eli)
+    {
+        cc_stress_value[eli] *= std::pow(rho[eli], 0.5);
+    }
     cc_stress_computed = true;
 }
 
@@ -189,9 +195,9 @@ Eigen::VectorXd Evaluator::max_stresses()
     for (std::size_t eli = 0; eli < assignments.size(); ++eli)
     {
         std::size_t agg_index = assignments[eli];
-        if (cc_stress[agg_index] > max_stress[agg_index])
+        if (cc_stress[eli] > max_stress[agg_index])
         {
-            max_stress[agg_index] = cc_stress[agg_index];
+            max_stress[agg_index] = cc_stress[eli];
         }
     }
     return max_stress;

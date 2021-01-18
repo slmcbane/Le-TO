@@ -47,8 +47,7 @@ void cell_centered_stress(
 }
 
 template <class Mesh>
-void eliminate_essential_boundaries(
-    Eigen::MatrixXd &workspace, const ModelInfo<Mesh> &minfo)
+void eliminate_essential_boundaries(Eigen::MatrixXd &workspace, const ModelInfo<Mesh> &minfo)
 {
     assert(workspace.rows() == 2 * minfo.mesh.num_nodes());
     for (int j = 0; j < workspace.cols(); ++j)
@@ -58,8 +57,8 @@ void eliminate_essential_boundaries(
             const auto &bound = minfo.mesh.boundary(which);
             for (auto n : bound.nodes)
             {
-                workspace(2*n, j) = 0;
-                workspace(2*n+1, j) = 0;
+                workspace(2 * n, j) = 0;
+                workspace(2 * n + 1, j) = 0;
             }
         }
     }
@@ -88,8 +87,9 @@ void pnorm_stress_aggregates(
             const auto &u = minfo.displacement;
             for (std::size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
             {
-                cc_stress[eli] = cell_centered_stress(u, minfo.mesh, lambda, mu, eli);
-                double sigma = def.stiffness_interp(minfo.rho_filt[eli]) * cc_stress[eli];
+                double sigma = cell_centered_stress(u, minfo.mesh, lambda, mu, eli) *
+                               def.stiffness_interp(minfo.rho_filt[eli]);
+                cc_stress[eli] = sigma;
                 aggregates[def.agg_regions.assignments[eli]] += std::pow(sigma, def.p);
                 counts[def.agg_regions.assignments[eli]] += 1;
             }
@@ -147,12 +147,10 @@ void pnorm_aggs_with_jacobian(
                 const auto &filt = minfo.filter[eli];
                 // sigma is relaxed stress at eli; dsigmadu is its partial w.r.t. u.
                 auto [sigma, dsigmadu] = cell_centered_stress_w_gradient(u, minfo.mesh, lambda, mu, eli);
-                cc_stress[eli] = sigma;
+                
                 sigma *= s(minfo.rho_filt[eli]);
-                for (int i = 0; i < dsigmadu.size(); ++i)
-                {
-                    dsigmadu[i] *= s(minfo.rho_filt[eli]);
-                }
+                cc_stress[eli] = sigma;
+                dsigmadu *= s(minfo.rho_filt[eli]);
 
                 // update p-norm aggregate accumulator.
                 aggs[agg_index] += std::pow(sigma, def.p);

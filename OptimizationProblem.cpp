@@ -137,7 +137,7 @@ bool OptimizationProblem::eval_g(Index, const double *x, bool new_x, Index m, do
         const Eigen::VectorXd &aggs = m_evaluator.stress_aggregates();
         for (Index i = 0; i < m; ++i)
         {
-            g[i] = aggs[i];
+            g[i] = aggs[i] * m_stress_normalization(i);
         }
         return true;
     }
@@ -147,7 +147,7 @@ bool OptimizationProblem::eval_g(Index, const double *x, bool new_x, Index m, do
         g[0] = m_evaluator.compliance();
         for (Index i = 1; i < m; ++i)
         {
-            g[i] = aggs[i - 1];
+            g[i] = aggs[i - 1] * m_stress_normalization(i);
         }
         return true;
     }
@@ -185,7 +185,14 @@ bool OptimizationProblem::eval_jac_g(
         case MWS:
         {
             const auto &J = m_evaluator.stress_agg_jacobian();
-            memcpy(values, J.data(), sizeof(double) * nele_jac);
+            std::size_t offset = 0;
+            for (long i = 0; i < m; ++i)
+            {
+                for (long j = 0; j < n; ++j)
+                {
+                    values[offset++] = J(i, j) * m_stress_normalization[i];
+                }
+            }
             return true;
         }
         case MWCS:
@@ -193,7 +200,14 @@ bool OptimizationProblem::eval_jac_g(
             const auto &cg = m_evaluator.compliance_gradient();
             memcpy(values, cg.data(), sizeof(double) * n);
             const auto &J = m_evaluator.stress_agg_jacobian();
-            memcpy(values + n, J.data(), (m - 1) * n * sizeof(double));
+            std::size_t offset = 0;
+            for (long i = 0; i < m; ++i)
+            {
+                for (long j = 0; j < n; ++j)
+                {
+                    values[n + offset++] = J(i, j) * m_stress_normalization[i];
+                }
+            }
             return true;
         }
         case MCW:
@@ -209,12 +223,17 @@ bool OptimizationProblem::eval_jac_g(
 }
 
 bool OptimizationProblem::intermediate_callback(
-    Ipopt::AlgorithmMode, Index, double, double, double, double, double, double, double, double, Index,
+    Ipopt::AlgorithmMode mode, Index, double, double, double, double, double, double, double, double, Index,
     const Ipopt::IpoptData *, Ipopt::IpoptCalculatedQuantities *)
 {
-    update_mean_changes();
-    if (m_mean_change.mean() < m_options.mean_change_tol.value())
+    if (mode == Ipopt::AlgorithmMode::RestorationPhaseMode)
     {
+        return true;
+    }
+    update_mean_changes();
+    if (m_iter > m_options.mean_change_iters.value() && m_mean_change.mean() < m_options.mean_change_tol.value())
+    {
+        std::cout << m_mean_change << std::endl;
         return false;
     }
 
