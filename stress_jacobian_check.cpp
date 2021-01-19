@@ -60,6 +60,7 @@ int main()
     rho += perturbation_magnitude * perturbation;
     evaluator.set_parameter(rho.data());
     const auto new_aggs = evaluator.stress_aggregates();
+    std::cout << "\n\n" << new_aggs << std::endl;
 
     const Eigen::VectorXd dd = ref_jac * perturbation;
     const Eigen::VectorXd dd_fd = (new_aggs - ref_aggs) / perturbation_magnitude;

@@ -47,4 +47,13 @@ void pnorm_aggs_with_jacobian(
     Eigen::VectorXd &cc_stress, const StressCriterionDefinition &def, const ModelInfoVariant &minfo,
     double lambda, double mu, Eigen::MatrixXd &workspace, Eigen::MatrixXd &workspace2);
 
+void induced_stress_aggregates(
+    Eigen::VectorXd &aggs, Eigen::VectorXd &cc_stress, const StressCriterionDefinition &def,
+    const ModelInfoVariant &minfo, double lambda, double mu);
+
+void induced_aggs_with_jacobian(
+    Eigen::VectorXd &aggs, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> &J,
+    Eigen::VectorXd &cc_stress, const StressCriterionDefinition &def, const ModelInfoVariant &minfo,
+    double lambda, double mu, Eigen::MatrixXd &workspace, Eigen::MatrixXd &workspace2);
+
 #endif // STRESS_COMPUTATIONS_HPP

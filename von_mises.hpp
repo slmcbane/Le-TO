@@ -66,6 +66,10 @@ struct VonMisesComputer
         coeffs = cs;
     }
 
+    constexpr static auto coeffs_size = 2 * Element::basis.size();
+
+    const Element &element() const noexcept { return el; }
+
   private:
     const Element el;
     Eigen::Matrix<double, 2 * Element::basis.size(), 1> coeffs;
