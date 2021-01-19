@@ -1,5 +1,4 @@
 #include "OptimizationProblem.hpp"
-#include "IpIpoptApplication.hpp"
 #include "options.hpp"
 #include "save_eigen.hpp"
 
@@ -61,37 +60,6 @@ unrecognized:
     exit(3);
 }
 
-void apply_options(Ipopt::IpoptApplication &app, const OptimizationOptions &opt_options)
-{
-    app.Options()->SetStringValue("hessian_approximation", "limited-memory");
-    app.Options()->SetStringValue("mu_strategy", "adaptive");
-
-    if (opt_options.max_iters)
-    {
-        app.Options()->SetIntegerValue("max_iter", *opt_options.max_iters);
-    }
-
-    if (opt_options.absolute_tol)
-    {
-        app.Options()->SetNumericValue("tol", *opt_options.absolute_tol);
-    }
-
-    if (opt_options.acceptable_tol)
-    {
-        app.Options()->SetNumericValue("acceptable_tol", *opt_options.acceptable_tol);
-    }
-
-    if (opt_options.acceptable_iters)
-    {
-        app.Options()->SetIntegerValue("acceptable_iter", *opt_options.acceptable_iters);
-    }
-
-    if (opt_options.verbosity_level)
-    {
-        app.Options()->SetIntegerValue("print_level", *opt_options.verbosity_level);
-    }
-}
-
 int main()
 {
     auto options = parse_options_file("options.toml");
@@ -126,23 +94,18 @@ int main()
     OptimizationOptions opt_options;
     parse_optimization_options(options, opt_options);
 
-    Ipopt::SmartPtr<OptimizationProblem> problem =
-        new OptimizationProblem(evaluator, opt_options, parse_optimization_type(options));
+    OptimizationProblem problem(evaluator, opt_options, parse_optimization_type(options));
+    nlopt::opt optimizer = problem.get_optimizer();
+    std::vector<double> rho(num_elements(evaluator.model_info()), 1);
+    double optimal_value;
+    optimizer.optimize(rho, optimal_value);
 
-    Ipopt::SmartPtr<Ipopt::IpoptApplication> app = new Ipopt::IpoptApplication();
-
-    apply_options(*app, opt_options);
-
-    app->OptimizeTNLP(problem);
-
-    save_eigen(problem->optimal_values(), "rho.dat");
+    // save_eigen(problem->optimal_values(), "rho.dat");
     save_eigen(evaluator.filtered_parameter(), "rho_filt.dat");
     save_eigen(evaluator.cell_centered_stress(), "cc_stress.dat");
     save_eigen(evaluator.displacement(), "u.dat");
 
     std::cout << "Max stresses by region:\n" << evaluator.max_stresses() << "\n";
-    std::cout << "vs. constraint values:\n" << problem->constraint_values() << "\n";
-    std::cout << "Objective value: " << problem->objective() << "\n";
 
     return 0;
 }

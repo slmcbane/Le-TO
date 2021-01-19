@@ -1,14 +1,11 @@
 #ifndef OPTIMIZATION_PROBLEM_HPP
 #define OPTIMIZATION_PROBLEM_HPP
 
-#include "IpTNLP.hpp"
+#include "nlopt.hpp"
 
 #include "evaluator.hpp"
 #include "options.hpp"
-
-using Ipopt::Index;
-
-class OptimizationProblem : public Ipopt::TNLP
+class OptimizationProblem
 {
   public:
     OptimizationProblem(
@@ -24,37 +21,41 @@ class OptimizationProblem : public Ipopt::TNLP
         m_stress_normalization.fill(1);
     }
 
-    bool get_nlp_info(Index &, Index &, Index &, Index &, IndexStyleEnum &);
+    nlopt::opt get_optimizer();
 
-    bool get_bounds_info(Index, double *, double *, Index, double *, double *);
+    // bool get_nlp_info(unsigned &, unsigned &, unsigned &, unsigned &, unsignedStyleEnum &);
 
-    bool get_starting_point(Index, bool, double *, bool, double *, double *, Index, bool, double *);
+    bool get_bounds_info(unsigned, double *, double *, unsigned, double *, double *);
 
-    bool eval_f(Index, const double *, bool, double &);
+    bool get_starting_point(unsigned, bool, double *, bool, double *, double *, unsigned, bool, double *);
 
-    bool eval_grad_f(Index, const double *, bool, double *);
+    bool eval_f(unsigned, const double *, bool, double &);
 
-    bool eval_g(Index, const double *, bool, Index, double *);
+    bool eval_grad_f(unsigned, const double *, bool, double *);
 
-    bool eval_jac_g(Index, const double *, bool, Index, Index, Index *, Index *, double *);
+    bool eval_g(unsigned, const double *, bool, unsigned, double *);
 
+    bool eval_jac_g(unsigned, const double *, bool, unsigned, unsigned, unsigned *, unsigned *, double *);
+
+/*
     void finalize_solution(
-        Ipopt::SolverReturn, Index n, const double *x, const double *, const double *, Index m,
+        Ipopt::SolverReturn, unsigned n, const double *x, const double *, const double *, unsigned m,
         const double *g, const double *, double obj_value, const Ipopt::IpoptData *,
         Ipopt::IpoptCalculatedQuantities *)
     {
         m_optimal_values = Eigen::Map<const Eigen::VectorXd>(x, n);
         m_constraint_values = Eigen::Map<const Eigen::VectorXd>(g, m);
         m_obj_value = obj_value;
-    }
+    } */
 
     const Eigen::VectorXd &optimal_values() const { return m_optimal_values; }
     const Eigen::VectorXd &constraint_values() const { return m_constraint_values; }
     double objective() const { return m_obj_value; }
 
+/*
     bool intermediate_callback(
-        Ipopt::AlgorithmMode, Index, double, double, double, double, double, double, double, double, Index,
-        const Ipopt::IpoptData *, Ipopt::IpoptCalculatedQuantities *);
+        Ipopt::AlgorithmMode, unsigned, double, double, double, double, double, double, double, double, unsigned,
+        const Ipopt::IpoptData *, Ipopt::IpoptCalculatedQuantities *); */
 
   private:
     Evaluator &m_evaluator;
@@ -82,6 +83,8 @@ class OptimizationProblem : public Ipopt::TNLP
         if (new_x)
         {
             m_evaluator.set_parameter(x);
+            update_stress_normalization();
+            maybe_update_region_definitions();
         }
     }
 
@@ -91,6 +94,9 @@ class OptimizationProblem : public Ipopt::TNLP
     void update_mean_changes();
     void update_stress_normalization();
     void maybe_update_region_definitions();
+
+    static double nlopt_f(unsigned, const double *, double *, void *);
+    static void nlopt_g(unsigned, double *, unsigned, const double *, double *, void *);
 };
 
 #endif // OPTIMIZATION_PROBLEM_HPP
