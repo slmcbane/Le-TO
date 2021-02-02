@@ -1,35 +1,35 @@
 mesh_file = "lbracket.msh"
 converted_mesh_file = "lbracket_mesh.dat"
 mesh_order = 1
-force_magnitude = 0.1
-filter_radius = 0.02
-optimization_type = "MWS"
+force_magnitude = 750000.0
+filter_radius = 0.004
+optimization_type = "MWCS"
 
 [Material]
 epsilon_constitutive = 1e-3
 epsilon_stress = 1e-6
 simp_exponent = 3
 stress_exponent = 0.5
-youngs_modulus = 100.0
-youngs_modulus_stress = 100.0
-poissons_ratio = 0.3
+youngs_modulus = 71000e6
+youngs_modulus_stress = 100
+poissons_ratio = 0.33
 
 [Aggregation]
 num_aggregation_regions = 20
-aggregation_multiplier = 20
+aggregation_multiplier = 12
 
 [Optimization]
 # If NLOpt is used, max_iters is actually max function evaluations.
-max_iters = 10000
+max_iters = 1000
 absolute_tol = 1e-8
-acceptable_tol = 1e-8
+acceptable_tol = 1e-3
 acceptable_iters = 10
 accept_every_trial_step = false
-compliance_limit = 3e-4
-stress_limit = 0.5
-mass_limit = 0.35
+compliance_limit = 2.0
+stress_limit = 350e6
+mass_limit = 0.25
 mean_change_iters = 10
-mean_change_tol = 0
+mean_change_tol = 1e-8
 verbosity_level = 6
-reassign_regions_interval = 1000
-stress_alpha = 0
+reassign_regions_interval = 5
+stress_alpha = 0.0
