@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <exception>
 #include <iterator>
+#include <optional>
 #include <queue>
 #include <string>
 #include <tuple>
