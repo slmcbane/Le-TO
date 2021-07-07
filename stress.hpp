@@ -13,10 +13,7 @@ struct AggregationRegions
     std::size_t n;
     std::vector<std::size_t> assignments;
 
-    AggregationRegions(std::size_t num_elements) : n{1}
-    {
-        assignments.resize(num_elements, 0);
-    }
+    AggregationRegions(std::size_t num_elements) : n{1} { assignments.resize(num_elements, 0); }
 
     AggregationRegions() = default;
 };
@@ -26,6 +23,7 @@ struct StressCriterionDefinition
     ErsatzStiffness stiffness_interp;
     AggregationRegions agg_regions;
     double p;
+    Eigen::VectorXd alphas;
 };
 
 /*
@@ -35,6 +33,18 @@ struct StressCriterionDefinition
 void pnorm_stress_aggregates(
     Eigen::VectorXd &aggs, Eigen::VectorXd &cc_stress, const StressCriterionDefinition &def,
     const ModelInfoVariant &minfo, double lambda, double mu);
+
+/*
+ * Compute stress aggregates with the KS functional using given aggregation regions.
+ */
+void ks_stress_aggregates(
+    Eigen::VectorXd &aggs, const StressCriterionDefinition &def,
+    const ModelInfoVariant &minfo, double lambda, double mu);
+
+void ks_aggs_with_jacobian(
+    Eigen::VectorXd &aggs, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> &J,
+    const StressCriterionDefinition &def, const ModelInfoVariant &minfo,
+    double lambda, double mu, Eigen::MatrixXd &workspace, Eigen::MatrixXd &workspace2);
 
 AggregationRegions assign_agg_regions(const Eigen::VectorXd &cc_stress, std::size_t n);
 

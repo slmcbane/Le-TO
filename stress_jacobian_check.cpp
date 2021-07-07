@@ -51,7 +51,8 @@ int main()
     int nregions = *agg_options.num_aggregation_regions;
     auto agg_regions = assign_agg_regions(evaluator.cell_centered_stress(), nregions);
     evaluator.set_stress_criterion(StressCriterionDefinition{
-        stress_interp, std::move(agg_regions), *agg_options.aggregation_multiplier});
+        stress_interp, std::move(agg_regions), *agg_options.aggregation_multiplier,
+        Eigen::VectorXd::Constant(nregions, 1)});
 
     const auto ref_jac = evaluator.stress_agg_jacobian();
     const auto ref_aggs = evaluator.stress_aggregates();

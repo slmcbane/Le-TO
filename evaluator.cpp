@@ -119,9 +119,8 @@ void Evaluator::compute_aggregates()
         solve_forward();
     }
 
-    pnorm_stress_aggregates(aggregate_values, cc_stress_value, *stress_criterion, *m_minfo, lambda, mu);
+    ks_stress_aggregates(aggregate_values, *stress_criterion, *m_minfo, lambda, mu);
 
-    cc_stress_computed = true;
     aggregates_computed = true;
 }
 
@@ -143,11 +142,10 @@ void Evaluator::compute_aggregates_and_jac()
         solve_forward();
     }
 
-    pnorm_aggs_with_jacobian(
-        aggregate_values, agg_jacobian, cc_stress_value, *stress_criterion, *m_minfo, lambda, mu, workspace,
+    ks_aggs_with_jacobian(
+        aggregate_values, agg_jacobian, *stress_criterion, *m_minfo, lambda, mu, workspace,
         workspace2);
 
-    cc_stress_computed = true;
     aggregates_computed = true;
     aggj_computed = true;
 }

@@ -149,6 +149,13 @@ public:
         return Quadrature::integrate(std::forward<F>(f), Quadrature::triangle_rule<T, npoints>);
     }
 
+    template <int I>
+    static constexpr auto quadrature_rule() noexcept
+    {
+        constexpr auto npoints = (I + 2) / 2 + I % 2 > 0 ? (I + 2) / 2 + I % 2 : 1;
+        return Quadrature::triangle_rule<T, npoints>;
+    }
+
 private:
     std::array<T, 6> m_coeffs;
 };
