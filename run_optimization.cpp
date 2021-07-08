@@ -153,6 +153,7 @@ int main()
     save_eigen(evaluator.cell_centered_stress(), "cc_stress.dat");
     save_eigen(evaluator.displacement(), "u.dat");
 
+    std::cout << "Max stress in the domain: " << evaluator.max_stress() << '\n';
     std::cout << "Max stresses by region:\n" << evaluator.max_stresses() << "\n";
     std::cout << "vs. constraint values:\n" << problem->constraint_values() << "\n";
     std::cout << "Objective value: " << problem->objective() << "\n";
