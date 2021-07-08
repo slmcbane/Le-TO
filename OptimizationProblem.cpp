@@ -1,5 +1,8 @@
 #include "OptimizationProblem.hpp"
 
+#define FMT_HEADER_ONLY
+#include "fmt/format.h"
+
 bool OptimizationProblem::get_nlp_info(
     Index &n, Index &m, Index &nnz_jac_g, Index &nnz_h_lag, IndexStyleEnum &index_style)
 {
@@ -88,6 +91,7 @@ bool OptimizationProblem::eval_f(Index, const double *x, bool new_x, double &obj
     case MWS:
     case MWCS:
         obj_value = m_evaluator.sum_mass_times_density();
+        fmt::print("Current objective value: {:E}\n", obj_value);
         return true;
     case MCW:
         obj_value = m_evaluator.compliance();
@@ -231,13 +235,27 @@ bool OptimizationProblem::intermediate_callback(
         return true;
     }
     update_mean_changes();
-    if (m_iter > m_options.mean_change_iters.value() && m_mean_change.mean() < m_options.mean_change_tol.value())
+    if (m_iter > m_options.mean_change_iters.value() &&
+        m_mean_change.mean() < m_options.mean_change_tol.value())
     {
         std::cout << m_mean_change << std::endl;
         return false;
     }
 
+    const Eigen::VectorXd &aggs = m_evaluator.stress_aggregates();
+    fmt::print("Agg. values: [");
+    for (int i = 0; i < aggs.size(); ++i)
+    {
+        fmt::print((i == aggs.size() - 1) ? "{:E}]\n" : "{:E}, ", aggs[i]);
+    }
+
     update_stress_normalization();
+    fmt::print("With updated scaling: [");
+    for (int i = 0; i < aggs.size(); ++i)
+    {
+        fmt::print((i == aggs.size() - 1) ? "{:E}]\n" : "{:E}, ", aggs[i] * m_stress_normalization[i]);
+    }
+
     maybe_update_region_definitions();
 
     m_iter += 1;
@@ -256,7 +274,7 @@ void OptimizationProblem::update_stress_normalization()
 {
     Eigen::VectorXd max_stresses = m_evaluator.max_stresses();
     m_stress_normalization = m_stress_alpha * max_stresses.cwiseQuotient(m_evaluator.stress_aggregates()) +
-        (1 - m_stress_alpha) * m_stress_normalization;
+                             (1 - m_stress_alpha) * m_stress_normalization;
 }
 
 void OptimizationProblem::maybe_update_region_definitions()

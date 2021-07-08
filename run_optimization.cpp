@@ -98,7 +98,7 @@ void apply_options(Ipopt::IpoptApplication &app, const OptimizationOptions &opt_
 
     if (opt_options.watchdog_shortened_iter_trigger)
     {
-        app.Options()->SetNumericValue(
+        app.Options()->SetIntegerValue(
             "watchdog_shortened_iter_trigger", *opt_options.watchdog_shortened_iter_trigger);
     }
 }
@@ -132,7 +132,8 @@ int main()
     evaluator.set_stress_criterion(StressCriterionDefinition{
         ErsatzStiffness(p_stress, eps_stress),
         assign_agg_regions(evaluator.cell_centered_stress(), agg_options.num_aggregation_regions.value()),
-        agg_options.aggregation_multiplier.value()});
+        agg_options.aggregation_multiplier.value(), 
+        Eigen::VectorXd::Constant(agg_options.num_aggregation_regions.value(), 1)});
 
     OptimizationOptions opt_options;
     parse_optimization_options(options, opt_options);
