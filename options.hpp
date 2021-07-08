@@ -81,6 +81,9 @@ struct OptimizationOptions
     std::optional<int> reassign_regions_interval;
     std::optional<double> stress_alpha;
 
+    std::optional<int> watchdog_shortened_iter_trigger;
+    std::optional<double> theta_max_fact;
+
     OptimizationOptions() {}
 };
 

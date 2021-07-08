@@ -1,5 +1,5 @@
-#include "OptimizationProblem.hpp"
 #include "IpIpoptApplication.hpp"
+#include "OptimizationProblem.hpp"
 #include "options.hpp"
 #include "save_eigen.hpp"
 
@@ -89,6 +89,17 @@ void apply_options(Ipopt::IpoptApplication &app, const OptimizationOptions &opt_
     if (opt_options.verbosity_level)
     {
         app.Options()->SetIntegerValue("print_level", *opt_options.verbosity_level);
+    }
+
+    if (opt_options.theta_max_fact)
+    {
+        app.Options()->SetNumericValue("theta_max_fact", *opt_options.theta_max_fact);
+    }
+
+    if (opt_options.watchdog_shortened_iter_trigger)
+    {
+        app.Options()->SetNumericValue(
+            "watchdog_shortened_iter_trigger", *opt_options.watchdog_shortened_iter_trigger);
     }
 }
 

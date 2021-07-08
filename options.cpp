@@ -161,7 +161,9 @@ constexpr inline const char *opt_option_names[] = {
     "maxtime",
     "optimization_type",
     "reassign_regions_interval",
-    "stress_alpha"};
+    "stress_alpha",
+    "watchdog_shortened_iter_trigger",
+    "theta_max_fact"};
 
 template <class T>
 void set_value(OptimizationOptions &options, const char *what, T value)
@@ -292,6 +294,12 @@ void set_value(OptimizationOptions &options, const char *what, T value)
         break;
     case 'r':
         options.reassign_regions_interval = value;
+        break;
+    case 'w':
+        options.watchdog_shortened_iter_trigger = value;
+        break;
+    case 't':
+        options.theta_max_fact = value;
         break;
     default:;
     }

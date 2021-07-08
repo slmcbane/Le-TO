@@ -33,3 +33,5 @@ mean_change_tol = 0
 verbosity_level = 6
 reassign_regions_interval = 1000
 stress_alpha = 0
+watchdog_shortened_iter_trigger = 0
+theta_max_fact = 0.01
