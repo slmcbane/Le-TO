@@ -341,9 +341,9 @@ Eigen::VectorXd get_max_quadrature_stresses(
         const auto comp =
             Elasticity::TwoD::VonMisesComputer<std::decay_t<decltype(el)>>(el, coeffs, lambda, mu);
 
-        const auto rule =
-            el.coordinate_map()
-                .template quadrature_rule<Galerkin::DefaultIntegrationOrder<std::decay_t<decltype(el)>>::order>();
+        const auto rule = el.coordinate_map()
+                              .template quadrature_rule<
+                                  Galerkin::DefaultIntegrationOrder<std::decay_t<decltype(el)>>::order>();
 
         size_t which_agg = def.agg_regions.assignments[eli];
 
@@ -407,7 +407,7 @@ void ks_aggregates_w_jacobian(
         integrate_over_element_with_partials(
             el, coeffs, def.stiffness_interp, lambda, mu, def.p, ms[which_agg], minfo.rho_filt[eli],
             integrated);
-        
+
         aggs[which_agg] += integrated(0);
         for (auto [ri, w] : filt.entries)
         {
@@ -438,23 +438,127 @@ void ks_aggregates_w_jacobian(
 } // namespace
 
 void ks_stress_aggregates(
-    Eigen::VectorXd &aggs, const StressCriterionDefinition &def,
-    const ModelInfoVariant &minfo, double lambda, double mu)
+    Eigen::VectorXd &aggs, const StressCriterionDefinition &def, const ModelInfoVariant &minfo,
+    double lambda, double mu)
 {
-    std::visit([&, lambda, mu] (const auto &minfo)
-    {
-        ks_aggregates(aggs, def, minfo, lambda, mu);
-    }, minfo);
+    std::visit([&, lambda, mu](const auto &minfo) { ks_aggregates(aggs, def, minfo, lambda, mu); }, minfo);
 }
-
 
 void ks_aggs_with_jacobian(
     Eigen::VectorXd &aggs, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> &J,
-    const StressCriterionDefinition &def, const ModelInfoVariant &minfo,
-    double lambda, double mu, Eigen::MatrixXd &workspace, Eigen::MatrixXd &workspace2)
+    const StressCriterionDefinition &def, const ModelInfoVariant &minfo, double lambda, double mu,
+    Eigen::MatrixXd &workspace, Eigen::MatrixXd &workspace2)
 {
-    std::visit([&, lambda, mu] (const auto &minfo)
+    std::visit(
+        [&, lambda, mu](const auto &minfo)
+        { ks_aggregates_w_jacobian(aggs, J, def, minfo, lambda, mu, workspace, workspace2); },
+        minfo);
+}
+
+namespace
+{
+
+template <class Mesh>
+double
+updated_max_stress(const ModelInfo<Mesh> &minfo, size_t eli, double lambda, double mu, double max_stress)
+{
+    const auto &el = Elasticity::TwoD::instantiate_element(minfo.mesh, eli);
+    const auto u = extract_coeffs(minfo.mesh, minfo.displacement, eli);
+
+    const auto stress_computer =
+        Elasticity::TwoD::VonMisesComputer<std::decay_t<decltype(el)>>(el, u, lambda, mu);
+
+    auto update_max = [&](auto... args)
     {
-        ks_aggregates_w_jacobian(aggs, J, def, minfo, lambda, mu, workspace, workspace2);
-    }, minfo);
+        double sigma = stress_computer.evaluate(args...);
+        if (sigma > max_stress)
+        {
+            max_stress = sigma;
+        }
+    };
+
+    // Nodal stress values.
+    update_max(-1, -1);
+    update_max(-1, 1);
+    update_max(1, -1);
+
+    // Quadrature points.
+    const auto rule = el.coordinate_map()
+                          .template quadrature_rule<
+                              Galerkin::DefaultIntegrationOrder<std::decay_t<decltype(el)>>::order>();
+    for (auto pt : rule.points)
+    {
+        update_max(pt);
+    }
+
+    return max_stress;
+}
+
+template <class Mesh>
+double estimate_max_stress(const ModelInfo<Mesh> &minfo, double lambda, double mu)
+{
+    double max_stress = 0;
+
+    for (size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
+    {
+        max_stress = updated_max_stress(minfo, eli, lambda, mu, max_stress);
+    }
+
+    return max_stress;
+}
+
+template <class Mesh>
+double ks_alpha_contrib(
+    const ModelInfo<Mesh> &minfo, size_t eli, double lambda, double mu, double p, double max_stress)
+{
+    const auto u = extract_coeffs(minfo.mesh, minfo.displacement, eli);
+    const auto el = Elasticity::TwoD::instantiate_element(minfo.mesh, eli);
+    const auto stress_computer = Elasticity::TwoD::VonMisesComputer<decltype(el)>(el, u, lambda, mu);
+
+    const auto rule = el.coordinate_map()
+                          .template quadrature_rule<
+                              Galerkin::DefaultIntegrationOrder<std::decay_t<decltype(el)>>::order>();
+
+    double integrated = 0;
+    for (size_t i = 0; i < rule.points.size(); ++i)
+    {
+        const double integrand = std::exp(p * (stress_computer.evaluate(rule.points[i]) - max_stress));
+        const double det = el.coordinate_map().detJ()(rule.points[i]);
+        integrated += integrand * det * rule.weights[i];
+    }
+
+    return integrated;
+}
+
+template <class Mesh>
+double estimate_ks_alpha(const ModelInfo<Mesh> &minfo, double lambda, double mu, double p)
+{
+    const double max_stress = estimate_max_stress(minfo, lambda, mu);
+    fmt::print("  Max. stress in the domain is {:E}\n", max_stress);
+    double integral = 0;
+
+    for (size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
+    {
+        integral += ks_alpha_contrib(minfo, eli, lambda, mu, p, max_stress);
+    }
+
+    return integral;
+}
+
+} // namespace
+
+double estimate_max_stress(const ModelInfoVariant &minfo, double lambda, double mu)
+{
+    return std::visit([=](const auto &minfo) { return estimate_max_stress(minfo, lambda, mu); }, minfo);
+}
+
+double estimate_ks_alpha(const ModelInfoVariant &minfo, double lambda, double mu, double p, double frac)
+{
+    fmt::print("Estimating K-S normalization...\n");
+    double integral =
+        std::visit([=](const auto &minfo) { return estimate_ks_alpha(minfo, lambda, mu, p); }, minfo);
+
+    double alpha = integral * frac;
+    fmt::print("Estimated alpha as {:E}\n", alpha);
+    return alpha;
 }

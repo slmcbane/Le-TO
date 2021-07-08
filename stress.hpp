@@ -57,4 +57,17 @@ void pnorm_aggs_with_jacobian(
     Eigen::VectorXd &cc_stress, const StressCriterionDefinition &def, const ModelInfoVariant &minfo,
     double lambda, double mu, Eigen::MatrixXd &workspace, Eigen::MatrixXd &workspace2);
 
+/*
+ * Estimate the normalization alpha for K-S aggregation via eq. (8) from
+ * Kennedy and Hicken. The returned alpha is frac * upper bound from that
+ * equation. p is multiplier in the K-S functional.
+ */
+double estimate_ks_alpha(const ModelInfoVariant &minfo, double lambda, double mu, double p, double frac);
+
+/*
+ * Estimate maximum stress by evaluating at all quadrature points
+ * (as used in evaluating the K-S aggregates) and nodes.
+ */
+double estimate_max_stress(const ModelInfoVariant &minfo, double lambda, double mu);
+
 #endif // STRESS_COMPUTATIONS_HPP

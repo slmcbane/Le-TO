@@ -35,6 +35,10 @@ class Evaluator
 
     const ModelInfoVariant &model_info() const { return *m_minfo; }
 
+    double max_stress();
+
+    double estimated_ks_alpha(double p, double frac);
+
     const Eigen::VectorXd &cell_centered_stress();
 
     const Eigen::VectorXd &stress_aggregates();

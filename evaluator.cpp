@@ -207,3 +207,23 @@ void Evaluator::reassign_aggregation_regions()
     stress_criterion->agg_regions =
         assign_agg_regions(cell_centered_stress(), stress_criterion->agg_regions.n);
 }
+
+double Evaluator::max_stress()
+{
+    if (!solved_forward)
+    {
+        solve_forward();
+    }
+
+    return estimate_max_stress(model_info(), lambda, mu);
+}
+
+double Evaluator::estimated_ks_alpha(double p, double frac)
+{
+    if (!solved_forward)
+    {
+        solve_forward();
+    }
+
+    return estimate_ks_alpha(model_info(), lambda, mu, p, frac);
+}
