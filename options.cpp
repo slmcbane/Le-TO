@@ -163,10 +163,12 @@ constexpr inline const char *opt_option_names[] = {
     "reassign_regions_interval",
     "stress_alpha",
     "watchdog_shortened_iter_trigger",
-    "theta_max_fact"};
+    "theta_max_fact",
+    "initial_condition_file"};
 
 template <class T>
-void set_value(OptimizationOptions &options, const char *what, T value)
+std::enable_if_t<std::is_arithmetic_v<T>, void>
+set_value(OptimizationOptions &options, const char *what, T value)
 {
     switch (what[0])
     {
@@ -305,6 +307,14 @@ void set_value(OptimizationOptions &options, const char *what, T value)
     }
 }
 
+template <class T>
+std::enable_if_t<std::is_same_v<T, std::string>, void>
+set_value(OptimizationOptions &options, const char *what, const T &value)
+{
+    assert(what[0] == 'i');
+    options.initial_condition_file = value;
+}
+
 void parse_optimization_options(const toml::table &options, OptimizationOptions &opt_options)
 {
     const toml::node *opt_table = options.get("Optimization");
@@ -336,6 +346,10 @@ void parse_optimization_options(const toml::table &options, OptimizationOptions 
         else if (option->is_boolean())
         {
             set_value(opt_options, name, option->as_boolean()->get());
+        }
+        else if (option->is_string())
+        {
+            set_value(opt_options, name, option->as_string()->get());
         }
         else
         {

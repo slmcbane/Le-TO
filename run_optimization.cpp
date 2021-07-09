@@ -103,6 +103,25 @@ void apply_options(Ipopt::IpoptApplication &app, const OptimizationOptions &opt_
     }
 }
 
+namespace
+{
+
+std::vector<double> get_initial_condition(std::size_t n, const OptimizationOptions &options)
+{
+    if (options.initial_condition_file)
+    {
+        Eigen::VectorXd init = read_eigen((*options.initial_condition_file).c_str());
+        assert(init.size() == n);
+        return std::vector<double>(init.data(), init.data() + init.size());
+    }
+    else
+    {
+        return std::vector<double>(n, 1);
+    }
+}
+
+} // namespace
+
 int main()
 {
     auto options = parse_options_file("options.toml");
@@ -123,21 +142,21 @@ int main()
     Evaluator evaluator(
         mesh_file, order, force, ErsatzStiffness(p_material, eps_material), filter_radius, lambda, mu);
 
+    OptimizationOptions opt_options;
+    parse_optimization_options(options, opt_options);
+
     /* Set up the parameters for stress constraints */
     AggregationOptions agg_options;
     parse_aggregation_options(options, agg_options);
     double p_stress = mat_options.stress_exponent.value();
     double eps_stress = mat_options.epsilon_stress.value();
-    evaluator.set_parameter(std::vector<double>(num_elements(evaluator.model_info()), 1).data());
+    evaluator.set_parameter(get_initial_condition(num_elements(evaluator.model_info()), opt_options).data());
     double ks_alpha = evaluator.estimated_ks_alpha(agg_options.aggregation_multiplier.value(), 1.0);
     evaluator.set_stress_criterion(StressCriterionDefinition{
         ErsatzStiffness(p_stress, eps_stress),
         assign_agg_regions(evaluator.cell_centered_stress(), agg_options.num_aggregation_regions.value()),
         agg_options.aggregation_multiplier.value(), 
         Eigen::VectorXd::Constant(agg_options.num_aggregation_regions.value(), ks_alpha)});
-
-    OptimizationOptions opt_options;
-    parse_optimization_options(options, opt_options);
 
     Ipopt::SmartPtr<OptimizationProblem> problem =
         new OptimizationProblem(evaluator, opt_options, parse_optimization_type(options));
