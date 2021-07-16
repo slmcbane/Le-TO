@@ -242,21 +242,24 @@ bool OptimizationProblem::intermediate_callback(
         return false;
     }
 
-    const Eigen::VectorXd &aggs = m_evaluator.stress_aggregates();
-    fmt::print("Agg. values: [");
-    for (int i = 0; i < aggs.size(); ++i)
+    if (m_problem_type != MCW)
     {
-        fmt::print((i == aggs.size() - 1) ? "{:E}]\n" : "{:E}, ", aggs[i]);
-    }
+        const Eigen::VectorXd &aggs = m_evaluator.stress_aggregates();
+        fmt::print("Agg. values: [");
+        for (int i = 0; i < aggs.size(); ++i)
+        {
+            fmt::print((i == aggs.size() - 1) ? "{:E}]\n" : "{:E}, ", aggs[i]);
+        }
 
-    update_stress_normalization();
-    fmt::print("With updated scaling: [");
-    for (int i = 0; i < aggs.size(); ++i)
-    {
-        fmt::print((i == aggs.size() - 1) ? "{:E}]\n" : "{:E}, ", aggs[i] * m_stress_normalization[i]);
-    }
+        update_stress_normalization();
+        fmt::print("With updated scaling: [");
+        for (int i = 0; i < aggs.size(); ++i)
+        {
+            fmt::print((i == aggs.size() - 1) ? "{:E}]\n" : "{:E}, ", aggs[i] * m_stress_normalization[i]);
+        }
 
-    maybe_update_region_definitions();
+        maybe_update_region_definitions();
+    }
 
     m_iter += 1;
 
