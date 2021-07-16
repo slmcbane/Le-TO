@@ -1,3 +1,5 @@
 option('ipopt_dir', type : 'string', value : '/nonexistent/path')
 
 option('blaslib', type : 'string', value : 'openblas')
+
+option('eigen_include_dir', type : 'string', value : '/usr/lib')
