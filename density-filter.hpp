@@ -45,8 +45,10 @@ void filter_densities(Vout &filtered, const Vin &rho, const std::vector<DensityF
         filtered[i] = 0;
         for (const auto [j, w] : filter[i].entries)
         {
+            assert(w > 0);
             filtered[i] += w * rho[j];
         }
+        filtered[i] = filtered[i] < 0 ? 0 : filtered[i];
     }
 }
 
