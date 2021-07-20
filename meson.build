@@ -33,3 +33,6 @@ executable('stress_jacobian_check', 'stress_jacobian_check.cpp', link_with : let
 executable('run_optimization', 'run_optimization.cpp', 'OptimizationProblem.cpp',
            link_with : leto_lib, dependencies : [ipopt, blas],
            include_directories : incdirlist)
+
+executable('postprocess', 'postprocess.cpp', link_with : leto_lib,
+           include_directories : incdirlist)

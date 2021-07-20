@@ -69,3 +69,13 @@ void update_model_info(ModelInfoVariant &minfo, const double *rho)
         update_model_info(m, Eigen::Map<const Eigen::VectorXd>(rho, m.mesh.num_elements()));
     }, minfo);
 }
+
+void update_model_info(ModelInfoVariant &minfo, const double *rho, DirectDensitySpec)
+{
+    std::visit([rho](auto &m)
+    {
+        update_model_info(m, Eigen::Map<const Eigen::VectorXd>(rho, m.mesh.num_elements()),
+            DirectDensitySpec{});
+    }, minfo);
+}
+

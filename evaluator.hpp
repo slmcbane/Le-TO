@@ -29,6 +29,8 @@ class Evaluator
 
     void set_parameter(const double *rho);
 
+    void set_filtered_parameter_directly(const double *rho);
+
     double compliance();
 
     const Eigen::VectorXd &compliance_gradient();

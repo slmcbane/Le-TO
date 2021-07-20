@@ -73,8 +73,11 @@ std::unique_ptr<ModelInfoVariant> construct_model_info(
     const std::string &mesh_file, int order, Eigen::Vector2d force, ErsatzStiffness interp,
     double filt_radius, double lambda, double mu);
 
+struct DirectDensitySpec {};
+
 // And this one.
 void update_model_info(ModelInfoVariant &minfo, const double *rho);
+void update_model_info(ModelInfoVariant &minfo, const double *rho, DirectDensitySpec);
 
 std::size_t ndofs(const ModelInfoVariant &minfo);
 std::size_t num_elements(const ModelInfoVariant &minfo);
@@ -115,6 +118,28 @@ template <class Mesh, class Vec>
 void update_model_info(ModelInfo<Mesh> &minfo, const Vec &rho)
 {
     filter_densities(minfo.rho_filt, rho, minfo.filter);
+    minfo.forward_stiffness.reset();
+    for (std::size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
+    {
+        update_forward_stiffness(minfo, eli);
+    }
+    for (std::size_t which : minfo.homogeneous_boundaries)
+    {
+        Elasticity::TwoD::impose_homogeneous_condition(minfo.mesh, minfo.forward_stiffness, which);
+    }
+    construct_eigen_stiffness<Mesh>(minfo.forward_stiffness_eigen, minfo.forward_stiffness);
+    minfo.factorized.factorize(minfo.forward_stiffness_eigen);
+}
+
+template <class Mesh, class Vec>
+void update_model_info(ModelInfo<Mesh> &minfo, const Vec &rho, DirectDensitySpec)
+{
+    assert(rho.size() == minfo.rho_filt.size());
+    for (long i = 0; i < rho.size(); ++i)
+    {
+        minfo.rho_filt[i] = rho[i];
+    }
+
     minfo.forward_stiffness.reset();
     for (std::size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
     {

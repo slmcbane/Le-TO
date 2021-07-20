@@ -11,6 +11,15 @@ void Evaluator::set_parameter(const double *rho)
     cc_stress_computed = aggregates_computed = aggj_computed = false;
 }
 
+void Evaluator::set_filtered_parameter_directly(const double *rho)
+{
+    update_model_info(*m_minfo, rho, DirectDensitySpec{});
+    parameter_value = Eigen::Map<const Eigen::VectorXd>(rho, num_elements(*m_minfo));
+    parameter_set = true;
+    solved_forward = compliance_computed = compliance_gradient_computed = false;
+    cc_stress_computed = aggregates_computed = aggj_computed = false;
+}
+
 void Evaluator::solve_forward()
 {
     assert(parameter_set && "Set parameter before solving");
