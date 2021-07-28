@@ -349,7 +349,7 @@ Eigen::VectorXd get_max_quadrature_stresses(
 
         for (auto p : rule.points)
         {
-            double sigma = comp.evaluate(p);
+            double sigma = comp.evaluate(p) * def.stiffness_interp(minfo.rho_filt[eli]);
             if (sigma > maxes[which_agg])
             {
                 maxes[which_agg] = sigma;
@@ -357,6 +357,7 @@ Eigen::VectorXd get_max_quadrature_stresses(
         }
     }
 
+    std::cout << "ms =\n" << maxes << '\n';
     return maxes;
 }
 
