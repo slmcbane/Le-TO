@@ -3,6 +3,8 @@
 #include "options.hpp"
 #include "save_eigen.hpp"
 
+#include <chrono>
+
 OptimizationType parse_optimization_type(const toml::table &options)
 {
     if (!options.contains("optimization_type"))
@@ -124,6 +126,8 @@ std::vector<double> get_initial_condition(std::size_t n, const OptimizationOptio
 
 int main()
 {
+    auto start = std::chrono::steady_clock::now();
+
     auto options = parse_options_file("options.toml");
 
     /* Model setup */
@@ -176,6 +180,10 @@ int main()
     std::cout << "Max stresses by region:\n" << evaluator.max_stresses() << "\n";
     std::cout << "vs. constraint values:\n" << problem->constraint_values() << "\n";
     std::cout << "Objective value: " << problem->objective() << "\n";
+
+    auto stop = std::chrono::steady_clock::now();
+
+    std::cout << "Elapsed time: " << std::chrono::duration_cast<std::chrono::seconds>(stop - start).count() << "s\n";
 
     return 0;
 }
