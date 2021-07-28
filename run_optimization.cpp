@@ -103,6 +103,8 @@ void apply_options(Ipopt::IpoptApplication &app, const OptimizationOptions &opt_
         app.Options()->SetIntegerValue(
             "watchdog_shortened_iter_trigger", *opt_options.watchdog_shortened_iter_trigger);
     }
+
+    app.Options()->SetNumericValue("bound_relax_factor", 0.0);
 }
 
 namespace
