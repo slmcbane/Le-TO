@@ -135,6 +135,7 @@ int main()
     /* Model setup */
     std::string mesh_file = options.get("mesh_file")->as_string()->get();
     int order = options.get("mesh_order")->as_integer()->get();
+    fmt::print("Using mesh order {}\n", order);
     double force_magnitude = options.get("force_magnitude")->as_floating_point()->get();
     double filter_radius = options.get("filter_radius")->as_floating_point()->get();
     MaterialOptions mat_options;
