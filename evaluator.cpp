@@ -2,9 +2,19 @@
 #include "2d.hpp"
 #include "stress.hpp"
 
+#include <chrono>
+using namespace std::chrono;
+
+#define FMT_HEADER_ONLY
+#include "fmt/format.h"
+
 void Evaluator::set_parameter(const double *rho)
 {
+    auto tp_start = steady_clock::now();
     update_model_info(*m_minfo, rho);
+    auto tp_end = steady_clock::now();
+    auto elapsed = duration_cast<milliseconds>(tp_end - tp_start).count();
+    fmt::print("Updating factorized stiffness matrix took {:d} ms\n", elapsed);
     parameter_value = Eigen::Map<const Eigen::VectorXd>(rho, num_elements(*m_minfo));
     parameter_set = true;
     solved_forward = compliance_computed = compliance_gradient_computed = false;
@@ -24,8 +34,12 @@ void Evaluator::solve_forward()
 {
     assert(parameter_set && "Set parameter before solving");
 
+    auto tp_start = steady_clock::now();
     std::visit(
         [](auto &minfo) { minfo.displacement = minfo.factorized.solve(minfo.nodal_forcing); }, *m_minfo);
+    auto tp_end   = steady_clock::now();
+    auto elapsed = duration_cast<milliseconds>(tp_end - tp_start).count();
+    fmt::print("Forward solve took {:d} ms\n", elapsed);
 
     solved_forward = true;
 }
@@ -128,7 +142,11 @@ void Evaluator::compute_aggregates()
         solve_forward();
     }
 
+    auto tp_start = steady_clock::now();
     ks_stress_aggregates(aggregate_values, *stress_criterion, *m_minfo, lambda, mu);
+    auto tp_end   = steady_clock::now();
+    auto elapsed = duration_cast<milliseconds>(tp_end - tp_start).count();
+    fmt::print("Computing stress aggregates took {:d} ms\n", elapsed);
 
     aggregates_computed = true;
 }
@@ -151,9 +169,13 @@ void Evaluator::compute_aggregates_and_jac()
         solve_forward();
     }
 
+    auto tp_start = steady_clock::now();
     ks_aggs_with_jacobian(
         aggregate_values, agg_jacobian, *stress_criterion, *m_minfo, lambda, mu, workspace,
         workspace2);
+    auto tp_end   = steady_clock::now();
+    auto elapsed = duration_cast<milliseconds>(tp_end - tp_start).count();
+    fmt::print("Computing aggregates and Jacobian took {:d} ms\n", elapsed);
 
     aggregates_computed = true;
     aggj_computed = true;
