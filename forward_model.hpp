@@ -9,7 +9,11 @@
 
 #include <Eigen/Sparse>
 
+#include <chrono>
 #include <memory>
+
+#define FMT_HEADER_ONLY
+#include "fmt/format.h"
 
 template <class Mesh>
 struct ModelInfo
@@ -117,7 +121,13 @@ void initialize_model_info(ModelInfo<Mesh> &minfo, double lambda, double mu)
 template <class Mesh, class Vec>
 void update_model_info(ModelInfo<Mesh> &minfo, const Vec &rho)
 {
+    using namespace std::chrono;
+    fmt::print("Updating model info...\n");
+    auto tp_start = steady_clock::now();
     filter_densities(minfo.rho_filt, rho, minfo.filter);
+    auto tp_end = steady_clock::now();
+    fmt::print("  Filtering densities took {:d} ms\n", duration_cast<milliseconds>(tp_end - tp_start).count());
+    tp_start = steady_clock::now();
     minfo.forward_stiffness.reset();
     for (std::size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
     {
@@ -127,8 +137,18 @@ void update_model_info(ModelInfo<Mesh> &minfo, const Vec &rho)
     {
         Elasticity::TwoD::impose_homogeneous_condition(minfo.mesh, minfo.forward_stiffness, which);
     }
+    tp_end = steady_clock::now();
+    fmt::print("  Recomputing stiffness matrix & imposing BC's took {:d} ms\n",
+        duration_cast<milliseconds>(tp_end - tp_start).count());
+    tp_start = steady_clock::now();
     construct_eigen_stiffness<Mesh>(minfo.forward_stiffness_eigen, minfo.forward_stiffness);
+    tp_end = steady_clock::now();
+    fmt::print("  Converting stiffness matrix to compressed format took {:d} ms\n",
+        duration_cast<milliseconds>(tp_end - tp_start).count());
+    tp_start = steady_clock::now();
     minfo.factorized.factorize(minfo.forward_stiffness_eigen);
+    tp_end = steady_clock::now();
+    fmt::print("  Factorizing stiffness matrix took {:d} ms\n", duration_cast<milliseconds>(tp_end-tp_start).count());
 }
 
 template <class Mesh, class Vec>
