@@ -8,6 +8,10 @@
 
 void cell_centered_stress(Eigen::VectorXd &dest, const ModelInfoVariant &minfo, double lambda, double mu);
 
+Eigen::VectorXd averaged_nodal_stress(
+    const ModelInfoVariant &, const std::vector<int> &nadjacent, const Eigen::VectorXd &rho, double lambda,
+    double mu);
+
 struct AggregationRegions
 {
     std::size_t n;
@@ -38,13 +42,13 @@ void pnorm_stress_aggregates(
  * Compute stress aggregates with the KS functional using given aggregation regions.
  */
 void ks_stress_aggregates(
-    Eigen::VectorXd &aggs, const StressCriterionDefinition &def,
-    const ModelInfoVariant &minfo, double lambda, double mu);
+    Eigen::VectorXd &aggs, const StressCriterionDefinition &def, const ModelInfoVariant &minfo,
+    double lambda, double mu);
 
 void ks_aggs_with_jacobian(
     Eigen::VectorXd &aggs, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> &J,
-    const StressCriterionDefinition &def, const ModelInfoVariant &minfo,
-    double lambda, double mu, Eigen::MatrixXd &workspace, Eigen::MatrixXd &workspace2);
+    const StressCriterionDefinition &def, const ModelInfoVariant &minfo, double lambda, double mu,
+    Eigen::MatrixXd &workspace, Eigen::MatrixXd &workspace2);
 
 AggregationRegions assign_agg_regions(const Eigen::VectorXd &cc_stress, std::size_t n);
 

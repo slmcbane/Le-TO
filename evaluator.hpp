@@ -43,6 +43,8 @@ class Evaluator
 
     const Eigen::VectorXd &cell_centered_stress();
 
+    Eigen::VectorXd averaged_nodal_stress();
+
     const Eigen::VectorXd &stress_aggregates();
 
     Eigen::VectorXd max_stresses();

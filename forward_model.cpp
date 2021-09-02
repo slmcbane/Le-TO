@@ -42,12 +42,14 @@ ModelInfoVariant construct_model_info_internal(
     }
 }
 
-}
+} // namespace
 
-std::unique_ptr<ModelInfoVariant> construct_model_info(const std::string &mesh_file, int order, Eigen::Vector2d force,
-    ErsatzStiffness interp, double filt_radius, double lambda, double mu)
+std::unique_ptr<ModelInfoVariant> construct_model_info(
+    const std::string &mesh_file, int order, Eigen::Vector2d force, ErsatzStiffness interp,
+    double filt_radius, double lambda, double mu)
 {
-    std::unique_ptr<ModelInfoVariant> ptr(new ModelInfoVariant(construct_model_info_internal(mesh_file, order, force, interp, filt_radius)));
+    std::unique_ptr<ModelInfoVariant> ptr(
+        new ModelInfoVariant(construct_model_info_internal(mesh_file, order, force, interp, filt_radius)));
     std::visit([=](auto &model_info) { initialize_model_info(model_info, lambda, mu); }, *ptr);
     return ptr;
 }
@@ -64,18 +66,19 @@ std::size_t num_elements(const ModelInfoVariant &minfo)
 
 void update_model_info(ModelInfoVariant &minfo, const double *rho)
 {
-    std::visit([rho](auto &m)
-    {
-        update_model_info(m, Eigen::Map<const Eigen::VectorXd>(rho, m.mesh.num_elements()));
-    }, minfo);
+    std::visit(
+        [rho](auto &m) {
+            update_model_info(m, Eigen::Map<const Eigen::VectorXd>(rho, m.mesh.num_elements()));
+        },
+        minfo);
 }
 
 void update_model_info(ModelInfoVariant &minfo, const double *rho, DirectDensitySpec)
 {
-    std::visit([rho](auto &m)
-    {
-        update_model_info(m, Eigen::Map<const Eigen::VectorXd>(rho, m.mesh.num_elements()),
-            DirectDensitySpec{});
-    }, minfo);
+    std::visit(
+        [rho](auto &m) {
+            update_model_info(
+                m, Eigen::Map<const Eigen::VectorXd>(rho, m.mesh.num_elements()), DirectDensitySpec{});
+        },
+        minfo);
 }
-

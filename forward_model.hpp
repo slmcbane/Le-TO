@@ -77,7 +77,9 @@ std::unique_ptr<ModelInfoVariant> construct_model_info(
     const std::string &mesh_file, int order, Eigen::Vector2d force, ErsatzStiffness interp,
     double filt_radius, double lambda, double mu);
 
-struct DirectDensitySpec {};
+struct DirectDensitySpec
+{
+};
 
 // And this one.
 void update_model_info(ModelInfoVariant &minfo, const double *rho);
@@ -126,7 +128,8 @@ void update_model_info(ModelInfo<Mesh> &minfo, const Vec &rho)
     auto tp_start = steady_clock::now();
     filter_densities(minfo.rho_filt, rho, minfo.filter);
     auto tp_end = steady_clock::now();
-    fmt::print("  Filtering densities took {:d} ms\n", duration_cast<milliseconds>(tp_end - tp_start).count());
+    fmt::print(
+        "  Filtering densities took {:d} ms\n", duration_cast<milliseconds>(tp_end - tp_start).count());
     tp_start = steady_clock::now();
     minfo.forward_stiffness.reset();
     for (std::size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
@@ -138,17 +141,21 @@ void update_model_info(ModelInfo<Mesh> &minfo, const Vec &rho)
         Elasticity::TwoD::impose_homogeneous_condition(minfo.mesh, minfo.forward_stiffness, which);
     }
     tp_end = steady_clock::now();
-    fmt::print("  Recomputing stiffness matrix & imposing BC's took {:d} ms\n",
+    fmt::print(
+        "  Recomputing stiffness matrix & imposing BC's took {:d} ms\n",
         duration_cast<milliseconds>(tp_end - tp_start).count());
     tp_start = steady_clock::now();
     construct_eigen_stiffness<Mesh>(minfo.forward_stiffness_eigen, minfo.forward_stiffness);
     tp_end = steady_clock::now();
-    fmt::print("  Converting stiffness matrix to compressed format took {:d} ms\n",
+    fmt::print(
+        "  Converting stiffness matrix to compressed format took {:d} ms\n",
         duration_cast<milliseconds>(tp_end - tp_start).count());
     tp_start = steady_clock::now();
     minfo.factorized.factorize(minfo.forward_stiffness_eigen);
     tp_end = steady_clock::now();
-    fmt::print("  Factorizing stiffness matrix took {:d} ms\n", duration_cast<milliseconds>(tp_end-tp_start).count());
+    fmt::print(
+        "  Factorizing stiffness matrix took {:d} ms\n",
+        duration_cast<milliseconds>(tp_end - tp_start).count());
 }
 
 template <class Mesh, class Vec>
@@ -299,6 +306,31 @@ void compute_pressure_force(
         std::size_t node = boundary.nodes[i];
         nodal_forcing.segment(node * 2, 2) += work.segment(i * 2, 2);
     }
+}
+
+/*
+ * Get a vector with an entry for each node in the mesh, counting the
+ * number of elements adjacent to that node. Only elements with non-zero
+ * density are counted! This is assumed to be used *after* post-processing
+ * and rounding of densities.
+ */
+template <class Mesh>
+std::vector<int> count_adjacent_elements(const ModelInfo<Mesh> &minfo, const Eigen::VectorXd &rho)
+{
+    const auto &mesh = minfo.mesh;
+    std::vector<int> counts(mesh.num_nodes(), 0);
+    for (std::size_t eli = 0; eli < mesh.num_elements(); ++eli)
+    {
+        if (rho[eli] == 0)
+        {
+            continue;
+        }
+        for (auto ni : mesh.element(eli).node_numbers())
+        {
+            counts[ni] += 1;
+        }
+    }
+    return counts;
 }
 
 #endif // FORWARD_MODEL_HPP

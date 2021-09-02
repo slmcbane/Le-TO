@@ -37,7 +37,7 @@ void Evaluator::solve_forward()
     auto tp_start = steady_clock::now();
     std::visit(
         [](auto &minfo) { minfo.displacement = minfo.factorized.solve(minfo.nodal_forcing); }, *m_minfo);
-    auto tp_end   = steady_clock::now();
+    auto tp_end = steady_clock::now();
     auto elapsed = duration_cast<milliseconds>(tp_end - tp_start).count();
     fmt::print("Forward solve took {:d} ms\n", elapsed);
 
@@ -107,6 +107,18 @@ const Eigen::VectorXd &Evaluator::cell_centered_stress()
     return cc_stress_value;
 }
 
+Eigen::VectorXd Evaluator::averaged_nodal_stress()
+{
+    if (!solved_forward)
+    {
+        solve_forward();
+    }
+
+    auto nadjacent = std::visit(
+        [&](const auto &minfo) { return count_adjacent_elements(minfo, filtered_parameter()); }, *m_minfo);
+    return ::averaged_nodal_stress(*m_minfo, nadjacent, filtered_parameter(), lambda, mu);
+}
+
 void Evaluator::compute_cc_stress()
 {
     if (!solved_forward)
@@ -144,7 +156,7 @@ void Evaluator::compute_aggregates()
 
     auto tp_start = steady_clock::now();
     ks_stress_aggregates(aggregate_values, *stress_criterion, *m_minfo, lambda, mu);
-    auto tp_end   = steady_clock::now();
+    auto tp_end = steady_clock::now();
     auto elapsed = duration_cast<milliseconds>(tp_end - tp_start).count();
     fmt::print("Computing stress aggregates took {:d} ms\n", elapsed);
 
@@ -171,9 +183,8 @@ void Evaluator::compute_aggregates_and_jac()
 
     auto tp_start = steady_clock::now();
     ks_aggs_with_jacobian(
-        aggregate_values, agg_jacobian, *stress_criterion, *m_minfo, lambda, mu, workspace,
-        workspace2);
-    auto tp_end   = steady_clock::now();
+        aggregate_values, agg_jacobian, *stress_criterion, *m_minfo, lambda, mu, workspace, workspace2);
+    auto tp_end = steady_clock::now();
     auto elapsed = duration_cast<milliseconds>(tp_end - tp_start).count();
     fmt::print("Computing aggregates and Jacobian took {:d} ms\n", elapsed);
 
