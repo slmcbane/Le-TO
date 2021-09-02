@@ -30,32 +30,33 @@
 namespace smv
 {
 
-struct MaxSizeExceeded : public std::exception {};
+struct MaxSizeExceeded : public std::exception
+{
+};
 
 template <class T, class... Args>
 typename std::enable_if<std::is_trivially_destructible<T>::value>::type
 construct_in_place(T* ptr, Args&&... args) noexcept(noexcept(T(std::forward<Args>(args)...)))
 {
-    new(ptr) T(std::forward<Args>(args)...);
+    new (ptr) T(std::forward<Args>(args)...);
 }
 
 template <class T, class... Args>
 typename std::enable_if<!std::is_trivially_destructible<T>::value>::type
-construct_in_place(T* ptr, Args&&... args)
-    noexcept(std::is_nothrow_destructible<T>::value &&
-             noexcept(T(std::forward<Args>(args)...)))
-             
+construct_in_place(T* ptr, Args&&... args) noexcept(
+    std::is_nothrow_destructible<T>::value&& noexcept(T(std::forward<Args>(args)...)))
+
 {
     ptr->~T();
-    new(ptr) T(std::forward<Args>(args)...);
+    new (ptr) T(std::forward<Args>(args)...);
 }
 
 template <class T, std::size_t MAX_SIZE, bool CHECK_BOUNDS = true>
 class SmallVector
 {
-public:
+  public:
     SmallVector() : m_size{0} {}
-    
+
     typedef T value_type;
     typedef std::size_t size_type;
     typedef std::ptrdiff_t difference_type;
@@ -64,8 +65,7 @@ public:
     typedef T* iterator;
     typedef const T* const_iterator;
 
-    void push_back(const T &val)
-        noexcept((!CHECK_BOUNDS) && std::is_nothrow_assignable<T, const T&>::value)
+    void push_back(const T& val) noexcept((!CHECK_BOUNDS) && std::is_nothrow_assignable<T, const T&>::value)
     {
         if (CHECK_BOUNDS && m_size == MAX_SIZE)
         {
@@ -75,8 +75,8 @@ public:
     }
 
     template <class... Args>
-    void emplace_back(Args&&... args)
-        noexcept((!CHECK_BOUNDS) && noexcept(construct_in_place(std::declval<T*>(), std::forward<Args>(args)...)))
+    void emplace_back(Args&&... args) noexcept(
+        (!CHECK_BOUNDS) && noexcept(construct_in_place(std::declval<T*>(), std::forward<Args>(args)...)))
     {
         if (CHECK_BOUNDS && m_size == MAX_SIZE)
         {
@@ -118,7 +118,7 @@ public:
     iterator erase(const_iterator at) noexcept(!CHECK_BOUNDS)
     {
         iterator dst = begin() + (at - begin());
-        for (auto src = at+1; src != end(); ++dst, ++src)
+        for (auto src = at + 1; src != end(); ++dst, ++src)
         {
             *dst = std::move(*src);
         }
@@ -132,20 +132,14 @@ public:
         return begin() + (at - begin());
     }
 
-    reference operator[](std::size_t i) noexcept
-    {
-        return m_storage[i];
-    }
+    reference operator[](std::size_t i) noexcept { return m_storage[i]; }
 
-    const_reference operator[](std::size_t i) const noexcept
-    {
-        return m_storage[i];
-    }
+    const_reference operator[](std::size_t i) const noexcept { return m_storage[i]; }
 
     std::size_t size() const noexcept { return m_size; }
 
-    iterator insert(const_iterator pos, const T &value)
-        noexcept((!CHECK_BOUNDS) && std::is_nothrow_assignable<T, const T&>::value)
+    iterator insert(const_iterator pos, const T& value) noexcept(
+        (!CHECK_BOUNDS) && std::is_nothrow_assignable<T, const T&>::value)
     {
         if (CHECK_BOUNDS && m_size == MAX_SIZE)
         {
@@ -163,18 +157,12 @@ public:
         return it;
     }
 
-    bool empty() const noexcept
-    {
-        return m_size == 0;
-    }
+    bool empty() const noexcept { return m_size == 0; }
 
-    void clear() noexcept
-    {
-        m_size = 0;
-    }
+    void clear() noexcept { m_size = 0; }
 
-    value_type *data() noexcept { return &m_storage[0]; }
-    const value_type *data() const noexcept { return &m_storage[0]; }
+    value_type* data() noexcept { return &m_storage[0]; }
+    const value_type* data() const noexcept { return &m_storage[0]; }
 
     void resize(size_type sz) noexcept(!CHECK_BOUNDS)
     {
@@ -186,8 +174,8 @@ public:
         m_size = sz;
     }
 
-private:
-    T m_storage [MAX_SIZE];
+  private:
+    T m_storage[MAX_SIZE];
     std::size_t m_size;
 };
 

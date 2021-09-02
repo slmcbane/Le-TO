@@ -44,24 +44,27 @@ constexpr int which_poly_order() noexcept
 
 template <class Mesh>
 struct ElementOrder : public std::integral_constant<int, -1>
-{};
+{
+};
 
 template <class CoordT, size_t MEA, size_t MNA, size_t NPF, size_t IN>
-struct ElementOrder<TetMesh<CoordT, MEA, MNA, NPF, IN>> :
-    public std::integral_constant<int, which_poly_order<NPF, IN>()>
-{};
+struct ElementOrder<TetMesh<CoordT, MEA, MNA, NPF, IN>>
+    : public std::integral_constant<int, which_poly_order<NPF, IN>()>
+{
+};
 
 template <class Mesh>
 constexpr int element_order = ElementOrder<Mesh>::value;
 
 template <class Mesh>
 struct MaxNodeAdjacencies
-{};
+{
+};
 
 template <class CoordT, size_t MEA, size_t MNA, size_t NPF, size_t IN>
-struct MaxNodeAdjacencies<TetMesh<CoordT, MEA, MNA, NPF, IN>> :
-    public std::integral_constant<size_t, MNA>
-{};
+struct MaxNodeAdjacencies<TetMesh<CoordT, MEA, MNA, NPF, IN>> : public std::integral_constant<size_t, MNA>
+{
+};
 
 template <class Mesh>
 constexpr size_t max_node_adjacencies = MaxNodeAdjacencies<Mesh>::value;
@@ -69,4 +72,3 @@ constexpr size_t max_node_adjacencies = MaxNodeAdjacencies<Mesh>::value;
 } // namespace msh
 
 #endif // MESH_TRAITS_HPP
-

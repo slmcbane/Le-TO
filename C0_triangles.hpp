@@ -40,107 +40,95 @@ struct C0Triangle;
 
 } // namespace c0
 
-} //namespace fem
+} // namespace fem
 
 template <int PolynomialOrder>
-struct Galerkin::DefaultIntegrationOrder<fem::c0::C0Triangle<PolynomialOrder>> :
-    public Galerkin::IntegrationOrder<2*PolynomialOrder>
-{};
+struct Galerkin::DefaultIntegrationOrder<fem::c0::C0Triangle<PolynomialOrder>>
+    : public Galerkin::IntegrationOrder<2 * PolynomialOrder>
+{
+};
 
-namespace fem {
+namespace fem
+{
 
-namespace c0 {
+namespace c0
+{
 
 template <int PolynomialOrder>
-struct C0TriangleBasis{};
+struct C0TriangleBasis
+{
+};
 
 template <>
-struct C0TriangleBasis<1> :
-    public decltype(derive_shape_functions(
-        Galerkin::Elements::make_form(
-            Powers<1, 0>{}, Powers<0, 1>{}, Powers<0, 0>{}),
-        Galerkin::make_list(evaluate_at(rational<-1>, rational<-1>),
-                            evaluate_at(rational<-1>, rational<1>),
-                            evaluate_at(rational<1>, rational<-1>))
-    ))
-{};
+struct C0TriangleBasis<1>
+    : public decltype(derive_shape_functions(
+          Galerkin::Elements::make_form(Powers<1, 0>{}, Powers<0, 1>{}, Powers<0, 0>{}),
+          Galerkin::make_list(
+              evaluate_at(rational<-1>, rational<-1>), evaluate_at(rational<-1>, rational<1>),
+              evaluate_at(rational<1>, rational<-1>))))
+{
+};
 
 template <>
-struct C0TriangleBasis<2> :
-    public decltype(derive_shape_functions(
-        Galerkin::Elements::make_form(
-            Powers<2, 0>{}, Powers<0, 2>{}, Powers<1, 1>{},
-            Powers<1, 0>{}, Powers<0, 1>{}, Powers<0, 0>{}),
-        Galerkin::make_list(evaluate_at(rational<-1>, rational<-1>),
-                            evaluate_at(rational<-1>, rational<1>),
-                            evaluate_at(rational<1>, rational<-1>),
-                            evaluate_at(rational<-1>, rational<0>),
-                            evaluate_at(rational<0>, rational<0>),
-                            evaluate_at(rational<0>, rational<-1>))))
-{};
+struct C0TriangleBasis<2>
+    : public decltype(derive_shape_functions(
+          Galerkin::Elements::make_form(
+              Powers<2, 0>{}, Powers<0, 2>{}, Powers<1, 1>{}, Powers<1, 0>{}, Powers<0, 1>{},
+              Powers<0, 0>{}),
+          Galerkin::make_list(
+              evaluate_at(rational<-1>, rational<-1>), evaluate_at(rational<-1>, rational<1>),
+              evaluate_at(rational<1>, rational<-1>), evaluate_at(rational<-1>, rational<0>),
+              evaluate_at(rational<0>, rational<0>), evaluate_at(rational<0>, rational<-1>))))
+{
+};
 
 template <>
-struct C0TriangleBasis<3> :
-    public decltype(derive_shape_functions(
-        Galerkin::Elements::make_form(
-            Powers<3, 0>{}, Powers<0, 3>{}, Powers<2, 1>{},
-            Powers<1, 2>{}, Powers<2, 0>{}, Powers<0, 2>{},
-            Powers<1, 1>{}, Powers<1, 0>{}, Powers<0, 1>{},
-            Powers<0, 0>{}),
-        Galerkin::make_list(evaluate_at(rational<-1>, rational<-1>),
-                            evaluate_at(rational<-1>, rational<1>),
-                            evaluate_at(rational<1>, rational<-1>),
-                            evaluate_at(rational<-1>, -rational<1, 3>),
-                            evaluate_at(rational<-1>, rational<1, 3>),
-                            evaluate_at(-rational<1, 3>, rational<1, 3>),
-                            evaluate_at(rational<1, 3>, -rational<1, 3>),
-                            evaluate_at(rational<1, 3>, -rational<1>),
-                            evaluate_at(-rational<1, 3>, -rational<1>),
-                            evaluate_at(-rational<1, 2>, -rational<1, 2>))))
-{};
+struct C0TriangleBasis<3>
+    : public decltype(derive_shape_functions(
+          Galerkin::Elements::make_form(
+              Powers<3, 0>{}, Powers<0, 3>{}, Powers<2, 1>{}, Powers<1, 2>{}, Powers<2, 0>{},
+              Powers<0, 2>{}, Powers<1, 1>{}, Powers<1, 0>{}, Powers<0, 1>{}, Powers<0, 0>{}),
+          Galerkin::make_list(
+              evaluate_at(rational<-1>, rational<-1>), evaluate_at(rational<-1>, rational<1>),
+              evaluate_at(rational<1>, rational<-1>), evaluate_at(rational<-1>, -rational<1, 3>),
+              evaluate_at(rational<-1>, rational<1, 3>), evaluate_at(-rational<1, 3>, rational<1, 3>),
+              evaluate_at(rational<1, 3>, -rational<1, 3>), evaluate_at(rational<1, 3>, -rational<1>),
+              evaluate_at(-rational<1, 3>, -rational<1>), evaluate_at(-rational<1, 2>, -rational<1, 2>))))
+{
+};
 
 template <>
-struct C0TriangleBasis<4> :
-    public decltype(derive_shape_functions(
-        Galerkin::Elements::make_form(
-            Powers<4, 0>{}, Powers<0, 4>{}, Powers<3, 1>{}, Powers<1, 3>{},
-            Powers<2, 2>{}, Powers<3, 0>{}, Powers<0, 3>{}, Powers<2, 1>{},
-            Powers<1, 2>{}, Powers<2, 0>{}, Powers<0, 2>{}, Powers<1, 1>{},
-            Powers<1, 0>{}, Powers<0, 1>{}, Powers<0, 0>{}),
-        Galerkin::make_list(evaluate_at(rational<-1>, rational<-1>),
-                            evaluate_at(rational<-1>, rational<1>),
-                            evaluate_at(rational<1>, rational<-1>),
-                            evaluate_at(rational<-1>, -rational<1, 2>),
-                            evaluate_at(rational<-1>, rational<0>),
-                            evaluate_at(rational<-1>, rational<1, 2>),
-                            evaluate_at(-rational<1, 2>, rational<1, 2>),
-                            evaluate_at(rational<0>, rational<0>),
-                            evaluate_at(rational<1, 2>, -rational<1, 2>),
-                            evaluate_at(rational<1, 2>, rational<-1>),
-                            evaluate_at(rational<0>, rational<-1>),
-                            evaluate_at(rational<-1, 2>, rational<-1>),
-                            evaluate_at(-rational<1, 2>, -rational<1, 2>),
-                            evaluate_at(-rational<1, 2>, rational<0>),
-                            evaluate_at(rational<0>, -rational<1, 2>))
-    ))
-{};
+struct C0TriangleBasis<4>
+    : public decltype(derive_shape_functions(
+          Galerkin::Elements::make_form(
+              Powers<4, 0>{}, Powers<0, 4>{}, Powers<3, 1>{}, Powers<1, 3>{}, Powers<2, 2>{},
+              Powers<3, 0>{}, Powers<0, 3>{}, Powers<2, 1>{}, Powers<1, 2>{}, Powers<2, 0>{},
+              Powers<0, 2>{}, Powers<1, 1>{}, Powers<1, 0>{}, Powers<0, 1>{}, Powers<0, 0>{}),
+          Galerkin::make_list(
+              evaluate_at(rational<-1>, rational<-1>), evaluate_at(rational<-1>, rational<1>),
+              evaluate_at(rational<1>, rational<-1>), evaluate_at(rational<-1>, -rational<1, 2>),
+              evaluate_at(rational<-1>, rational<0>), evaluate_at(rational<-1>, rational<1, 2>),
+              evaluate_at(-rational<1, 2>, rational<1, 2>), evaluate_at(rational<0>, rational<0>),
+              evaluate_at(rational<1, 2>, -rational<1, 2>), evaluate_at(rational<1, 2>, rational<-1>),
+              evaluate_at(rational<0>, rational<-1>), evaluate_at(rational<-1, 2>, rational<-1>),
+              evaluate_at(-rational<1, 2>, -rational<1, 2>), evaluate_at(-rational<1, 2>, rational<0>),
+              evaluate_at(rational<0>, -rational<1, 2>))))
+{
+};
 
 template <int PolynomialOrder>
 struct C0Triangle : public Galerkin::Elements::ElementBase<C0Triangle<PolynomialOrder>>
 {
     constexpr static auto basis = C0TriangleBasis<PolynomialOrder>{};
 
-    const auto &coordinate_map() const noexcept
-    {
-        return m_map;
-    }
+    const auto &coordinate_map() const noexcept { return m_map; }
 
     template <class P>
-    C0Triangle(const P &a, const P &b, const P &c) noexcept :
-        m_map(a, b, c)
-    {}
+    C0Triangle(const P &a, const P &b, const P &c) noexcept : m_map(a, b, c)
+    {
+    }
 
-private:
+  private:
     Galerkin::Transforms::TriangleTransform<double> m_map;
 };
 

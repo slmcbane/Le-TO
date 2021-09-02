@@ -1,5 +1,5 @@
-#include "options.hpp"
 #include "evaluator.hpp"
+#include "options.hpp"
 #include "save_eigen.hpp"
 
 double get_drop_tolerance(const toml::table &options)
@@ -9,7 +9,7 @@ double get_drop_tolerance(const toml::table &options)
         fmt::print(stderr, "drop_tolerance not found in options\n");
         exit(1);
     }
-    else if(!options["drop_tolerance"].is_floating_point())
+    else if (!options["drop_tolerance"].is_floating_point())
     {
         fmt::print(stderr, "Expected drop_tolerance as floating point\n");
         exit(2);

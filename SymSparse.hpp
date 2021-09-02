@@ -51,8 +51,7 @@ struct OutOfBoundsIndex : public std::exception
 {
     std::size_t nrows, index;
 
-    OutOfBoundsIndex(std::size_t n, std::size_t i) noexcept : nrows{n}, index{i}
-    {}
+    OutOfBoundsIndex(std::size_t n, std::size_t i) noexcept : nrows{n}, index{i} {}
 
     const char *what() const noexcept
     {
@@ -64,9 +63,7 @@ struct DimensionMismatch : public std::exception
 {
     std::size_t expected, actual;
 
-    DimensionMismatch(std::size_t e, std::size_t a) noexcept :
-        expected{e}, actual{a}
-    {}
+    DimensionMismatch(std::size_t e, std::size_t a) noexcept : expected{e}, actual{a} {}
 
     const char *what() const noexcept
     {
@@ -95,15 +92,15 @@ struct DimensionMismatch : public std::exception
 template <class T, std::size_t MaxPerRow, bool SmallVecSizeCheck = true>
 class SymmetricSparseMatrix
 {
-public:
-    typedef smv::SmallVector<std::tuple<std::size_t, T>,
-                             MaxPerRow+1, SmallVecSizeCheck> small_vec;
-    
+  public:
+    typedef smv::SmallVector<std::tuple<std::size_t, T>, MaxPerRow + 1, SmallVecSizeCheck> small_vec;
+
     // Initialize matrix with appropriate number of rows, but no entries
-    SymmetricSparseMatrix(std::size_t nrows) :
-        m_rows(static_cast<typename decltype(m_rows)::size_type>(nrows))
-    {}
-   
+    SymmetricSparseMatrix(std::size_t nrows)
+        : m_rows(static_cast<typename decltype(m_rows)::size_type>(nrows))
+    {
+    }
+
     /*
      * Initialize matrix from a list of entries
      *
@@ -121,18 +118,18 @@ public:
      *
      * The constructed matrix has rows in sorted order, and each row and column
      * has either 0 or 1 entry.
-     * 
+     *
      * If `check_indices` is enabled (default) and an index is out of bounds, an
      * `OutOfBoundsIndex` exception is thrown.
      */
     template <class Container, class CheckBounds = std::true_type>
-    SymmetricSparseMatrix(std::size_t nrows, const Container &entries,
-                          CheckBounds check_indices = CheckBounds{}) :
-        m_rows(static_cast<typename decltype(m_rows)::size_type>(nrows))
+    SymmetricSparseMatrix(
+        std::size_t nrows, const Container &entries, CheckBounds check_indices = CheckBounds{})
+        : m_rows(static_cast<typename decltype(m_rows)::size_type>(nrows))
     {
         // Add all entries to appropriate rows.
         // Swap row and column to store everything as upper triangular.
-        for (const auto &entry: entries)
+        for (const auto &entry : entries)
         {
             std::size_t row = get<0>(entry);
             std::size_t col = get<1>(entry);
@@ -149,7 +146,7 @@ public:
                     throw OutOfBoundsIndex{nrows, col};
                 }
             }
-            
+
             if (col < row)
             {
                 std::swap(row, col);
@@ -160,18 +157,16 @@ public:
         }
 
         // Sort each row, then combine duplicates
-        for (auto &row: m_rows)
+        for (auto &row : m_rows)
         {
             using Entry = std::tuple<std::size_t, T>;
-            std::sort(row.begin(), row.end(),
-                    [](Entry e1, Entry e2) { return get<0>(e1) < get<0>(e2); });
+            std::sort(row.begin(), row.end(), [](Entry e1, Entry e2) { return get<0>(e1) < get<0>(e2); });
             combine_duplicates(row);
         }
     } // Container constructor
 
     template <class CheckBounds = std::true_type>
-    const small_vec &row(std::size_t i,
-            CheckBounds check_bounds = CheckBounds{}) const
+    const small_vec &row(std::size_t i, CheckBounds check_bounds = CheckBounds{}) const
     {
         if (check_bounds)
         {
@@ -185,8 +180,7 @@ public:
     }
 
     template <class CheckBounds = std::true_type>
-    void insert_entry(std::size_t i, std::size_t j, T val,
-            CheckBounds check_bounds = CheckBounds{})
+    void insert_entry(std::size_t i, std::size_t j, T val, CheckBounds check_bounds = CheckBounds{})
     {
         if (check_bounds)
         {
@@ -216,23 +210,26 @@ public:
     }
 
     template <class RHS, class Adjacent, class CheckBounds = std::true_type>
-    void eliminate_dof(std::size_t index, T val, T scale, RHS &rhs,
-                       const Adjacent &adjacent,
-                       CheckBounds check_bounds = CheckBounds{})
+    void eliminate_dof(
+        std::size_t index, T val, T scale, RHS &rhs, const Adjacent &adjacent,
+        CheckBounds check_bounds = CheckBounds{})
     {
         if (check_bounds && (index >= m_rows.size()))
         {
             throw OutOfBoundsIndex{m_rows.size(), index};
         }
 
-        for (auto row: adjacent)
+        for (auto row : adjacent)
         {
             if (check_bounds && (static_cast<std::size_t>(row) >= m_rows.size()))
             {
                 throw OutOfBoundsIndex{m_rows.size(), index};
             }
-            
-            if (static_cast<std::size_t>(row) >= index) { continue; }
+
+            if (static_cast<std::size_t>(row) >= index)
+            {
+                continue;
+            }
 
             auto it = m_rows[row].begin();
             while (it != m_rows[row].end() && get<0>(*it) < index)
@@ -344,7 +341,7 @@ public:
 
         for (std::size_t i = 0; i < m_rows.size(); ++i)
         {
-            for (const auto &entry: m_rows[i])
+            for (const auto &entry : m_rows[i])
             {
                 const auto j = get<0>(entry);
                 const auto a_ij = get<1>(entry);
@@ -380,7 +377,7 @@ public:
 
         for (std::size_t i = 0; i < m_rows.size(); ++i)
         {
-            for (const auto &entry: m_rows[i])
+            for (const auto &entry : m_rows[i])
             {
                 const auto j = get<0>(entry);
                 const auto a_times_aij = a * get<1>(entry);
@@ -396,7 +393,7 @@ public:
 
     size_t num_rows() const noexcept { return m_rows.size(); }
 
-private:
+  private:
     std::vector<small_vec> m_rows;
 
     static void combine_duplicates(small_vec &row) noexcept
@@ -410,7 +407,7 @@ private:
         std::size_t i = 0, j;
         while (i < row.size() - 1)
         {
-            j = i+1;
+            j = i + 1;
             while (j < row.size() && get<0>(row[j]) == get<0>(row[i]))
             {
                 get<1>(row[i]) += get<1>(row[j]);
@@ -418,20 +415,16 @@ private:
             }
             i = j;
         }
-        auto new_end = std::unique(row.begin(), row.end(),
-                [](Entry e1, Entry e2) { return get<0>(e1) == get<0>(e2); });
+        auto new_end = std::unique(
+            row.begin(), row.end(), [](Entry e1, Entry e2) { return get<0>(e1) == get<0>(e2); });
         row.erase(new_end, row.end());
     }
 
     void insert_entry_in_row(std::size_t i, std::size_t j, T val)
     {
         auto &row = m_rows[i];
-        auto dst_iterator = std::find_if(row.begin(), row.end(),
-                [=](const std::tuple<size_t, T> &entry)
-                {
-                    return get<0>(entry) >= j;
-                }
-        );
+        auto dst_iterator = std::find_if(
+            row.begin(), row.end(), [=](const std::tuple<size_t, T> &entry) { return get<0>(entry) >= j; });
         if (dst_iterator == row.end())
         {
             row.push_back(std::make_tuple(j, val));
@@ -474,13 +467,16 @@ struct type_number<double> : std::integral_constant<int32_t, 2>
 
 template <>
 struct type_number<int> : std::integral_constant<int32_t, 3>
-{};
+{
+};
 
 template <class T>
-struct has_valid_type_number : std::integral_constant<bool,
-    std::is_same<int32_t, typename type_number<T>::value_type>::value &&
-    type_number<T>::value >= 0>
-{};
+struct has_valid_type_number
+    : std::integral_constant<
+          bool,
+          std::is_same<int32_t, typename type_number<T>::value_type>::value && type_number<T>::value >= 0>
+{
+};
 
 struct SerializationException : public std::exception
 {
@@ -494,7 +490,7 @@ struct SerializationException : public std::exception
  * Serialize a matrix A to file "dst".
  * For types not included in the specializations above, YOU will need to define
  * one for serialization and deserialization to be enabled.
- * 
+ *
  * Serialization format
  * ====================
  * - A 32-bit signed integer specifying the type of entries in the matrix
@@ -545,8 +541,7 @@ serialize(FILE *dst, const SymmetricSparseMatrix<T, N, B> &A)
 }
 
 template <class T, size_t N>
-typename std::enable_if<has_valid_type_number<T>::value,
-                        SymmetricSparseMatrix<T, N>>::type
+typename std::enable_if<has_valid_type_number<T>::value, SymmetricSparseMatrix<T, N>>::type
 deserialize(FILE *src)
 {
     int32_t typecode;
@@ -595,8 +590,8 @@ deserialize(FILE *src)
 }
 
 template <class T, size_t N1, size_t N2, bool B1, bool B2>
-bool operator==(const SymmetricSparseMatrix<T, N1, B1> &A,
-                const SymmetricSparseMatrix<T, N2, B2> &B) noexcept
+bool operator==(
+    const SymmetricSparseMatrix<T, N1, B1> &A, const SymmetricSparseMatrix<T, N2, B2> &B) noexcept
 {
     if (A.num_rows() != B.num_rows())
     {
@@ -609,8 +604,7 @@ bool operator==(const SymmetricSparseMatrix<T, N1, B1> &A,
         const auto &Brow = B.row(i);
 
         for (auto pair = std::make_pair(Arow.begin(), Brow.begin());
-             pair.first != Arow.end() && pair.second != Brow.end();
-             ++pair.first, ++pair.second)
+             pair.first != Arow.end() && pair.second != Brow.end(); ++pair.first, ++pair.second)
         {
             if (*pair.first != *pair.second)
             {
@@ -631,10 +625,8 @@ TEST_CASE("Test constructor of SymmetricSparseMatrix")
 {
     SUBCASE("No funny business, just a list of entries in sorted order")
     {
-        std::array<std::array<int, 3>, 10> entries = {
-            0, 0, 1, 0, 1, 2, 0, 2, 3, 0, 3, 4,
-            1, 1, 2, 1, 2, 3, 1, 3, 4, 2, 2, 3,
-            2, 3, 4, 3, 3, 4 };
+        std::array<std::array<int, 3>, 10> entries = {0, 0, 1, 0, 1, 2, 0, 2, 3, 0, 3, 4, 1, 1, 2,
+                                                      1, 2, 3, 1, 3, 4, 2, 2, 3, 2, 3, 4, 3, 3, 4};
 
         SymmetricSparseMatrix<int, 3> A(4, entries);
 
@@ -650,7 +642,7 @@ TEST_CASE("Test constructor of SymmetricSparseMatrix")
             REQUIRE(get<0>(row[3]) == 3);
             REQUIRE(get<1>(row[3]) == 4);
         }
-        
+
         {
             const auto &row = A.row(1);
             REQUIRE(row.size() == 3);
@@ -682,32 +674,14 @@ TEST_CASE("Test constructor of SymmetricSparseMatrix")
     SUBCASE("All indices upper triangular, some need combined")
     {
         std::vector<std::tuple<int, int, int>> entries = {
-            std::make_tuple(0, 0, 1),
-            std::make_tuple(0, 1, 1),
-            std::make_tuple(0, 2, 3),
-            std::make_tuple(0, 3, 4),
-            std::make_tuple(0, 1, 1),
-            std::make_tuple(1, 1, 1),
-            std::make_tuple(1, 2, 3),
-            std::make_tuple(1, 3, 4),
-            std::make_tuple(1, 1, 1),
-            std::make_tuple(2, 2, 3),
-            std::make_tuple(2, 3, 4),
-            std::make_tuple(3, 3, 4)
-        };
+            std::make_tuple(0, 0, 1), std::make_tuple(0, 1, 1), std::make_tuple(0, 2, 3),
+            std::make_tuple(0, 3, 4), std::make_tuple(0, 1, 1), std::make_tuple(1, 1, 1),
+            std::make_tuple(1, 2, 3), std::make_tuple(1, 3, 4), std::make_tuple(1, 1, 1),
+            std::make_tuple(2, 2, 3), std::make_tuple(2, 3, 4), std::make_tuple(3, 3, 4)};
 
-        auto construct_bad = [&]()
-        {
-            return SymmetricSparseMatrix<int, 3>(4, entries);
-        };
-        auto construct_bad_but_nothrow = [&]()
-        {
-            return SymmetricSparseMatrix<int, 3, false>(4, entries);
-        };
-        auto construct_good = [&]()
-        {
-            return SymmetricSparseMatrix<int, 4>(4, entries);
-        };
+        auto construct_bad = [&]() { return SymmetricSparseMatrix<int, 3>(4, entries); };
+        auto construct_bad_but_nothrow = [&]() { return SymmetricSparseMatrix<int, 3, false>(4, entries); };
+        auto construct_good = [&]() { return SymmetricSparseMatrix<int, 4>(4, entries); };
 
         // By default this should throw because we will have extra elements in
         // the first row.
@@ -730,7 +704,7 @@ TEST_CASE("Test constructor of SymmetricSparseMatrix")
             REQUIRE(get<0>(row[3]) == 3);
             REQUIRE(get<1>(row[3]) == 4);
         }
-        
+
         {
             const auto &row = A.row(1);
             REQUIRE(row.size() == 3);
@@ -763,26 +737,14 @@ TEST_CASE("Test constructor of SymmetricSparseMatrix")
     SUBCASE("Test full combo, lower triangular indices + combining")
     {
         std::vector<std::tuple<int, int, int>> entries = {
-            std::make_tuple(0, 0, 1),
-            std::make_tuple(0, 1, 1),
-            std::make_tuple(1, 0, 1),
-            std::make_tuple(0, 2, 1),
-            std::make_tuple(2, 0, 1),
-            std::make_tuple(0, 2, 1),
-            std::make_tuple(0, 3, 2),
-            std::make_tuple(3, 0, 2),
-            std::make_tuple(1, 1, 1),
-            std::make_tuple(1, 1, 1),
-            std::make_tuple(1, 2, 2),
-            std::make_tuple(2, 1, 1),
-            std::make_tuple(1, 3, 4),
-            std::make_tuple(2, 2, 3),
-            std::make_tuple(3, 2, 4),
-            std::make_tuple(3, 3, 4)
-        };
+            std::make_tuple(0, 0, 1), std::make_tuple(0, 1, 1), std::make_tuple(1, 0, 1),
+            std::make_tuple(0, 2, 1), std::make_tuple(2, 0, 1), std::make_tuple(0, 2, 1),
+            std::make_tuple(0, 3, 2), std::make_tuple(3, 0, 2), std::make_tuple(1, 1, 1),
+            std::make_tuple(1, 1, 1), std::make_tuple(1, 2, 2), std::make_tuple(2, 1, 1),
+            std::make_tuple(1, 3, 4), std::make_tuple(2, 2, 3), std::make_tuple(3, 2, 4),
+            std::make_tuple(3, 3, 4)};
 
-        std::shuffle(entries.begin(), entries.end(),
-                     std::default_random_engine());
+        std::shuffle(entries.begin(), entries.end(), std::default_random_engine());
 
         const SymmetricSparseMatrix<int, 7> A(4, entries);
 
@@ -798,7 +760,7 @@ TEST_CASE("Test constructor of SymmetricSparseMatrix")
             REQUIRE(get<0>(row[3]) == 3);
             REQUIRE(get<1>(row[3]) == 4);
         }
-        
+
         {
             const auto &row = A.row(1);
             REQUIRE(row.size() == 3);
@@ -830,19 +792,13 @@ TEST_CASE("Test constructor of SymmetricSparseMatrix")
 
 TEST_CASE("Check that some exceptions get thrown as they should")
 {
-    std::array<std::array<int, 3>, 1> entry = { 0, 3, 4 };
+    std::array<std::array<int, 3>, 1> entry = {0, 3, 4};
 
-    auto construct_bad = [&]()
-    {
-        return SymmetricSparseMatrix<int, 1>(3, entry);
-    };
+    auto construct_bad = [&]() { return SymmetricSparseMatrix<int, 1>(3, entry); };
 
     REQUIRE_THROWS_AS(construct_bad(), OutOfBoundsIndex);
 
-    auto construct_ok = [&]()
-    {
-        return SymmetricSparseMatrix<int, 1>(3, entry, std::false_type{});
-    };
+    auto construct_ok = [&]() { return SymmetricSparseMatrix<int, 1>(3, entry, std::false_type{}); };
 
     REQUIRE_NOTHROW(construct_ok());
     {
@@ -871,29 +827,17 @@ TEST_CASE("Test constructing a matrix using successive calls to insert")
     SUBCASE("Test full combo, lower triangular indices + combining")
     {
         std::vector<std::tuple<int, int, int>> entries = {
-            std::make_tuple(0, 0, 1),
-            std::make_tuple(0, 1, 1),
-            std::make_tuple(1, 0, 1),
-            std::make_tuple(0, 2, 1),
-            std::make_tuple(2, 0, 1),
-            std::make_tuple(0, 2, 1),
-            std::make_tuple(0, 3, 2),
-            std::make_tuple(3, 0, 2),
-            std::make_tuple(1, 1, 1),
-            std::make_tuple(1, 1, 1),
-            std::make_tuple(1, 2, 2),
-            std::make_tuple(2, 1, 1),
-            std::make_tuple(1, 3, 4),
-            std::make_tuple(2, 2, 3),
-            std::make_tuple(3, 2, 4),
-            std::make_tuple(3, 3, 4)
-        };
+            std::make_tuple(0, 0, 1), std::make_tuple(0, 1, 1), std::make_tuple(1, 0, 1),
+            std::make_tuple(0, 2, 1), std::make_tuple(2, 0, 1), std::make_tuple(0, 2, 1),
+            std::make_tuple(0, 3, 2), std::make_tuple(3, 0, 2), std::make_tuple(1, 1, 1),
+            std::make_tuple(1, 1, 1), std::make_tuple(1, 2, 2), std::make_tuple(2, 1, 1),
+            std::make_tuple(1, 3, 4), std::make_tuple(2, 2, 3), std::make_tuple(3, 2, 4),
+            std::make_tuple(3, 3, 4)};
 
-        std::shuffle(entries.begin(), entries.end(),
-                     std::default_random_engine());
+        std::shuffle(entries.begin(), entries.end(), std::default_random_engine());
 
         SymmetricSparseMatrix<int, 3> A(4);
-        for (const auto &entry: entries)
+        for (const auto &entry : entries)
         {
             A.insert_entry(get<0>(entry), get<1>(entry), get<2>(entry));
         }
@@ -910,7 +854,7 @@ TEST_CASE("Test constructing a matrix using successive calls to insert")
             REQUIRE(get<0>(row[3]) == 3);
             REQUIRE(get<1>(row[3]) == 4);
         }
-        
+
         {
             const auto &row = A.row(1);
             REQUIRE(row.size() == 3);
@@ -942,33 +886,18 @@ TEST_CASE("Test constructing a matrix using successive calls to insert")
 
 TEST_CASE("Test eliminating degrees of freedom")
 {
-    std::array<std::array<int, 3>, 16> entries = {
-        0, 0, 2,
-        0, 3, 5,
-        0, 5, 1,
-        0, 6, 3,
-        1, 1, 3,
-        1, 2, 2,
-        1, 4, 3,
-        1, 6, 1,
-        2, 2, 4,
-        2, 3, 1,
-        3, 3, 1,
-        3, 5, 6,
-        3, 6, 5,
-        4, 4, 3,
-        5, 5, 2,
-        6, 6, 5
-    };
+    std::array<std::array<int, 3>, 16> entries = {0, 0, 2, 0, 3, 5, 0, 5, 1, 0, 6, 3, 1, 1, 3, 1,
+                                                  2, 2, 1, 4, 3, 1, 6, 1, 2, 2, 4, 2, 3, 1, 3, 3,
+                                                  1, 3, 5, 6, 3, 6, 5, 4, 4, 3, 5, 5, 2, 6, 6, 5};
 
-    std::array<int, 7> rhs = { 1, 2, 3, 4, 5, 6, 7 };
+    std::array<int, 7> rhs = {1, 2, 3, 4, 5, 6, 7};
 
     SymmetricSparseMatrix<int, 3> A(7, entries);
 
     SUBCASE("Eliminate degree of freedom given only the shared neighbors")
     {
         A.eliminate_dof(3, 3, 1, rhs, std::array<int, 4>{0, 2, 5, 6});
-        REQUIRE(rhs == std::array<int, 7>{ -14, 2, 0, 3, 5, -12, -8 });
+        REQUIRE(rhs == std::array<int, 7>{-14, 2, 0, 3, 5, -12, -8});
 
         {
             const auto &row = A.row(0);
@@ -1034,7 +963,7 @@ TEST_CASE("Test eliminating degrees of freedom")
     SUBCASE("Test eliminating dof given extraneous neighbors")
     {
         A.eliminate_dof(3, 3, 1, rhs, std::array<int, 7>{0, 1, 2, 3, 4, 5, 6});
-        REQUIRE(rhs == std::array<int, 7>{ -14, 2, 0, 3, 5, -12, -8 });
+        REQUIRE(rhs == std::array<int, 7>{-14, 2, 0, 3, 5, -12, -8});
 
         {
             const auto &row = A.row(0);
@@ -1100,43 +1029,30 @@ TEST_CASE("Test eliminating degrees of freedom")
 
 TEST_CASE("Test multiplication by a vector")
 {
-    const std::array<std::array<int, 3>, 12> entries = {
-        0, 0, 2,
-        0, 5, 1,
-        0, 6, 3,
-        1, 1, 3,
-        1, 2, 2,
-        1, 4, 3,
-        1, 6, 1,
-        2, 2, 4,
-        3, 3, 1,
-        4, 4, 3,
-        5, 5, 2,
-        6, 6, 5
-    };
+    const std::array<std::array<int, 3>, 12> entries = {0, 0, 2, 0, 5, 1, 0, 6, 3, 1, 1, 3,
+                                                        1, 2, 2, 1, 4, 3, 1, 6, 1, 2, 2, 4,
+                                                        3, 3, 1, 4, 4, 3, 5, 5, 2, 6, 6, 5};
 
     const SymmetricSparseMatrix<int, 3> A(7, entries);
 
-    const std::array<int, 7> rhs = { -14, 2, 0, 3, 5, -12, -8 };
+    const std::array<int, 7> rhs = {-14, 2, 0, 3, 5, -12, -8};
     std::array<int, 7> dst;
 
     // Test simple overwrite of dst
     A.mul(rhs, dst);
 
-    REQUIRE(dst == std::array<int, 7>{ -64, 13, 4, 3, 21, -38, -80 });
+    REQUIRE(dst == std::array<int, 7>{-64, 13, 4, 3, 21, -38, -80});
 
-    // Test with alpha and beta arguments (a * A * x + b * y) 
+    // Test with alpha and beta arguments (a * A * x + b * y)
     A.mul(3, rhs, -2, dst);
 
-    REQUIRE(dst == std::array<int, 7>{ -64, 13, 4, 3, 21, -38, -80 });
+    REQUIRE(dst == std::array<int, 7>{-64, 13, 4, 3, 21, -38, -80});
 } // TEST_CASE
 
 TEST_CASE("Test serialization of SymSparse")
 {
-    std::array<std::array<int, 3>, 10> entries = {
-        0, 0, 1, 0, 1, 2, 0, 2, 3, 0, 3, 4,
-        1, 1, 2, 1, 2, 3, 1, 3, 4, 2, 2, 3,
-        2, 3, 4, 3, 3, 4};
+    std::array<std::array<int, 3>, 10> entries = {0, 0, 1, 0, 1, 2, 0, 2, 3, 0, 3, 4, 1, 1, 2,
+                                                  1, 2, 3, 1, 3, 4, 2, 2, 3, 2, 3, 4, 3, 3, 4};
 
     SymmetricSparseMatrix<int, 3> A(4, entries);
     FILE *destination_file = fopen("serialized.dat", "w");
@@ -1158,4 +1074,3 @@ TEST_CASE("Test serialization of SymSparse")
 } // namespace SymSparse
 
 #endif /* SYMSPARSE_HPP */
-

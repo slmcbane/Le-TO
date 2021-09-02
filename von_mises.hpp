@@ -24,7 +24,7 @@ struct VonMisesComputer
     }
 
     template <class... Args>
-    double evaluate(const Args &... args) const
+    double evaluate(const Args &...args) const
     {
         const auto dudx = partials(args...);
         const auto div = dudx[0] + dudx[1];
@@ -37,7 +37,7 @@ struct VonMisesComputer
 
     template <class... Args>
     std::pair<double, Eigen::Matrix<double, 2 * basis_size<Element>, 1>>
-    evaluate_with_gradient(const Args &... args) const
+    evaluate_with_gradient(const Args &...args) const
     {
         const auto dudx = partials(args...);
         const auto div = dudx[0] + dudx[1];
@@ -73,7 +73,7 @@ struct VonMisesComputer
 
     // returns (ux_x, uy_y, ux_y, uy_x)
     template <class... Args>
-    Eigen::Vector4d partials(const Args &... args) const
+    Eigen::Vector4d partials(const Args &...args) const
     {
         Eigen::Vector4d ps(0, 0, 0, 0);
         Galerkin::static_for<0, basis_size<Element>, 1>([&](const auto I) {

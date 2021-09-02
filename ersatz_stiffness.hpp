@@ -6,7 +6,8 @@
 #include <exception>
 
 struct InterpException : public std::exception
-{};
+{
+};
 
 /*
  * Used to interpolate the stiffness of a material with intermediate density
@@ -29,7 +30,7 @@ struct ErsatzStiffness
     double derivative(double rho) const noexcept
     {
         const double adjusted = epsilon + (1 - epsilon) * rho;
-        return p * std::pow(adjusted, p-1) * (1 - epsilon);
+        return p * std::pow(adjusted, p - 1) * (1 - epsilon);
     }
 
     constexpr ErsatzStiffness(double power, double eps) noexcept : p{power}, epsilon{eps} {}

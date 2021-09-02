@@ -7,7 +7,7 @@
 
 class Xorshift64StarEngine
 {
-public:
+  public:
     typedef uint64_t result_type;
 
     constexpr uint64_t min() { return 0; }
@@ -23,8 +23,9 @@ public:
         return m_state * mult_constant;
     }
 
-    static_assert(sizeof(std::random_device::result_type) == sizeof(uint64_t) ||
-                  sizeof(std::random_device::result_type) * 2 == sizeof(uint64_t));
+    static_assert(
+        sizeof(std::random_device::result_type) == sizeof(uint64_t) ||
+        sizeof(std::random_device::result_type) * 2 == sizeof(uint64_t));
 
     Xorshift64StarEngine()
     {
@@ -43,7 +44,7 @@ public:
 
     Xorshift64StarEngine(uint64_t seed) noexcept : m_state(seed) {}
 
-private:
+  private:
     uint64_t m_state;
 };
 

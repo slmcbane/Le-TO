@@ -10,7 +10,7 @@ void serialize_filter(std::FILE *out, const DensityFilter &filter)
     smv::SmallVector<int64_t, max_filter_elements> is;
     smv::SmallVector<double, max_filter_elements> ws;
 
-    for (const auto &entry: filter.entries)
+    for (const auto &entry : filter.entries)
     {
         is.push_back(entry.index);
         ws.push_back(entry.weight);

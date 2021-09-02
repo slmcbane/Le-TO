@@ -1,7 +1,7 @@
 #include "evaluator.hpp"
-#include "xorshift.hpp"
 #include "options.hpp"
 #include "save_eigen.hpp"
+#include "xorshift.hpp"
 
 #define FMT_HEADER_ONLY
 #include "fmt/format.h"
@@ -29,8 +29,8 @@ int main()
     Eigen::VectorXd perturbation(rho.size());
     Xorshift64StarEngine random_engine;
 
-    std::uniform_real_distribution<double> udist(0.0, 
-        std::nextafter(1.0, std::numeric_limits<double>::max()));
+    std::uniform_real_distribution<double> udist(
+        0.0, std::nextafter(1.0, std::numeric_limits<double>::max()));
     std::normal_distribution<double> ndist;
 
     for (int i = 0; i < rho.size(); ++i)
@@ -54,7 +54,9 @@ int main()
     fmt::print("Directional derivative using FD: {}\n", dd_fd);
 
     save_eigen(rho, "rho.dat");
-    save_eigen(std::visit([](const auto &minfo) { return minfo.rho_filt; }, evaluator.model_info()), "rho_filt.dat");
+    save_eigen(
+        std::visit([](const auto &minfo) { return minfo.rho_filt; }, evaluator.model_info()),
+        "rho_filt.dat");
 
     return 0;
 }

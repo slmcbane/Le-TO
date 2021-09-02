@@ -1,8 +1,8 @@
 #include "evaluator.hpp"
 #include "options.hpp"
+#include "save_eigen.hpp"
 #include "stress.hpp"
 #include "xorshift.hpp"
-#include "save_eigen.hpp"
 
 #define FMT_HEADER_ONLY
 #include "fmt/format.h"
@@ -67,7 +67,7 @@ int main()
 
     for (int i = 0; i < nregions; ++i)
     {
-        fmt::print("Directional derivative of aggregate {}: {:E} vs {:E}\n", i+1, dd[i], dd_fd[i]);
+        fmt::print("Directional derivative of aggregate {}: {:E} vs {:E}\n", i + 1, dd[i], dd_fd[i]);
     }
 
     save_eigen(evaluator.cell_centered_stress(), "sigma.dat");

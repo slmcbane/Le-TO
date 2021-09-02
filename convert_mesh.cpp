@@ -1,5 +1,5 @@
-#include "read_mesh.hpp"
 #include "options.hpp"
+#include "read_mesh.hpp"
 
 #define FMT_HEADER_ONLY
 #include "fmt/format.h"
@@ -16,7 +16,8 @@ int main(int argc, char *argv[])
             exit(1);
         }
     }
-    else {
+    else
+    {
         fprintf(stderr, "Expected mesh_file as string in options\n");
         exit(1);
     }
@@ -30,7 +31,8 @@ int main(int argc, char *argv[])
             exit(2);
         }
     }
-    else {
+    else
+    {
         fprintf(stderr, "Expected converted_mesh_file as string in options\n");
         exit(2);
     }
@@ -55,12 +57,7 @@ int main(int argc, char *argv[])
     auto mesh = read_mesh(mesh_file.c_str(), order);
 
     FILE *output = fopen(converted_mesh_file.c_str(), "w");
-    std::visit(
-        [=](const auto &m)
-        {
-            m.serialize(output);
-        }, mesh
-    );
+    std::visit([=](const auto &m) { m.serialize(output); }, mesh);
     fclose(output);
 
     return 0;

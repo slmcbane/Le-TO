@@ -65,16 +65,12 @@ auto compute_centroid(const Mesh &mesh, std::size_t eli)
     const auto &el = mesh.element(eli);
     const auto transform = Galerkin::Transforms::triangle_transform(
         mesh.coord(el.control_nodes[0]), mesh.coord(el.control_nodes[1]), mesh.coord(el.control_nodes[2]));
-    
-    const auto area = transform.template quadrature<1>(
-        []([[maybe_unused]] auto pt) { return 1; }
-    );
-    const auto integral_of_x = transform.template quadrature<1>(
-        [&](auto pt) { return std::get<0>(transform(pt)); }
-    );
-    const auto integral_of_y = transform.template quadrature<1>(
-        [&](auto pt) { return std::get<1>(transform(pt)); }
-    );
+
+    const auto area = transform.template quadrature<1>([]([[maybe_unused]] auto pt) { return 1; });
+    const auto integral_of_x =
+        transform.template quadrature<1>([&](auto pt) { return std::get<0>(transform(pt)); });
+    const auto integral_of_y =
+        transform.template quadrature<1>([&](auto pt) { return std::get<1>(transform(pt)); });
 
     return std::array<double, 2>{integral_of_x / area, integral_of_y / area};
 }

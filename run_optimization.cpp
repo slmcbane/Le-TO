@@ -157,12 +157,13 @@ int main()
     parse_aggregation_options(options, agg_options);
     double p_stress = mat_options.stress_exponent.value();
     double eps_stress = mat_options.epsilon_stress.value();
-    evaluator.set_parameter(get_initial_condition(num_elements(evaluator.model_info()), opt_options).data());
+    evaluator.set_parameter(
+        get_initial_condition(num_elements(evaluator.model_info()), opt_options).data());
     double ks_alpha = evaluator.estimated_ks_alpha(agg_options.aggregation_multiplier.value(), 1.0);
     evaluator.set_stress_criterion(StressCriterionDefinition{
         ErsatzStiffness(p_stress, eps_stress),
         assign_agg_regions(evaluator.cell_centered_stress(), agg_options.num_aggregation_regions.value()),
-        agg_options.aggregation_multiplier.value(), 
+        agg_options.aggregation_multiplier.value(),
         Eigen::VectorXd::Constant(agg_options.num_aggregation_regions.value(), ks_alpha)});
 
     Ipopt::SmartPtr<OptimizationProblem> problem =
@@ -186,7 +187,8 @@ int main()
 
     auto stop = std::chrono::steady_clock::now();
 
-    std::cout << "Elapsed time: " << std::chrono::duration_cast<std::chrono::seconds>(stop - start).count() << "s\n";
+    std::cout << "Elapsed time: " << std::chrono::duration_cast<std::chrono::seconds>(stop - start).count()
+              << "s\n";
 
     return 0;
 }

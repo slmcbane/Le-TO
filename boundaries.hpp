@@ -53,4 +53,4 @@ LineMesh<msh::element_order<Mesh>> build_boundary_mesh(const Mesh &mesh, std::si
     return LineMesh<msh::element_order<Mesh>>(pts);
 }
 
-#endif //BOUNDARIES_HPP
+#endif // BOUNDARIES_HPP

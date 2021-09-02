@@ -1,10 +1,10 @@
 #ifndef SAVE_EIGEN_HPP
 #define SAVE_EIGEN_HPP
 
-#include <cstdio>
-#include <cstdint>
-#include <cstdlib>
 #include <Eigen/Core>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 
 inline void save_eigen(const Eigen::VectorXd &x, const char *name)
 {
