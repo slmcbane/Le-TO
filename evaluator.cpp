@@ -79,9 +79,8 @@ void Evaluator::compute_compliance_gradient()
     compliance_gradient_value = Eigen::VectorXd::Zero(num_elements(*m_minfo));
 
     std::visit(
-        [&](const auto &minfo) {
-            evaluate_tensor_product(compliance_gradient_value, -displacement(), minfo);
-        },
+        [&](const auto &minfo)
+        { evaluate_tensor_product(compliance_gradient_value, -displacement(), minfo); },
         *m_minfo);
 
     compliance_gradient_computed = true;
@@ -117,6 +116,16 @@ Eigen::VectorXd Evaluator::averaged_nodal_stress()
     auto nadjacent = std::visit(
         [&](const auto &minfo) { return count_adjacent_elements(minfo, filtered_parameter()); }, *m_minfo);
     return ::averaged_nodal_stress(*m_minfo, nadjacent, filtered_parameter(), lambda, mu);
+}
+
+Eigen::VectorXd Evaluator::elemental_max_stress()
+{
+    if (!solved_forward)
+    {
+        solve_forward();
+    }
+
+    return ::elemental_max_stress(*m_minfo, filtered_parameter(), lambda, mu);
 }
 
 void Evaluator::compute_cc_stress()
@@ -196,7 +205,8 @@ void Evaluator::compute_relative_areas()
 {
     double total_area = 0;
     std::visit(
-        [&](const auto &minfo) {
+        [&](const auto &minfo)
+        {
             const auto &mesh = minfo.mesh;
             for (std::size_t eli = 0; eli < mesh.num_elements(); ++eli)
             {

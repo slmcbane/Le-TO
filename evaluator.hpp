@@ -43,7 +43,18 @@ class Evaluator
 
     const Eigen::VectorXd &cell_centered_stress();
 
+    /*
+     * Get values of the stress at nodes, computed by averaging the values from all
+     * adjacent element **with non-zero density**.
+     * Averaging necessary because stress is discontinuous across element boundaries.
+     */
     Eigen::VectorXd averaged_nodal_stress();
+
+    /*
+     * Compute the maximum value of stress at quadrature points and nodes on a
+     * per-element basis. Zero if element has zero density.
+     */
+    Eigen::VectorXd elemental_max_stress();
 
     const Eigen::VectorXd &stress_aggregates();
 

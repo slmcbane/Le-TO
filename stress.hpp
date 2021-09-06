@@ -12,6 +12,13 @@ Eigen::VectorXd averaged_nodal_stress(
     const ModelInfoVariant &, const std::vector<int> &nadjacent, const Eigen::VectorXd &rho, double lambda,
     double mu);
 
+/*
+ * Compute element-wise maximum stress over quadrature points (from 8th-order quadrature rule)
+ * and nodes.
+ */
+Eigen::VectorXd
+elemental_max_stress(const ModelInfoVariant &, const Eigen::VectorXd &rho, double lambda, double mu);
+
 struct AggregationRegions
 {
     std::size_t n;

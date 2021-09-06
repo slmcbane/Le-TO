@@ -51,6 +51,7 @@ int main()
     save_eigen(rho, "rho_pp.dat");
     save_eigen(evaluator.displacement(), "u.dat");
     save_eigen(evaluator.cell_centered_stress(), "cc_stress.dat");
+    save_eigen(evaluator.elemental_max_stress(), "max_stress.dat");
 
     std::cout << "Max stress in the domain: " << evaluator.max_stress() << '\n';
     std::cout << "Objective value: " << evaluator.sum_mass_times_density() << "\n";

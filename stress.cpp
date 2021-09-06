@@ -91,14 +91,74 @@ Eigen::VectorXd averaged_nodal_stress(
     return sigma;
 }
 
+template <class Mesh>
+auto extract_coeffs(const Mesh &mesh, const Eigen::VectorXd &u, size_t eli)
+{
+    using Element = decltype(Elasticity::TwoD::instantiate_element(mesh, eli));
+    assert(eli < mesh.num_elements());
+
+    Eigen::Matrix<double, Element::basis.size() * 2, 1> coeffs;
+    const auto &nn = mesh.element(eli).node_numbers();
+    for (int i = 0; i < coeffs.size() / 2; ++i)
+    {
+        coeffs[2 * i] = u[2 * nn[i]];
+        coeffs[2 * i + 1] = u[2 * nn[i] + 1];
+    }
+
+    return coeffs;
+}
+
+template <class Mesh>
+double elemental_max_stress(
+    const Mesh &mesh, std::size_t eli, const Eigen::VectorXd &u, double rho, double lambda, double mu)
+{
+    if (rho == 0)
+    {
+        return 0;
+    }
+
+    const auto &el = Elasticity::TwoD::instantiate_element(mesh, eli);
+    const auto uel = extract_coeffs(mesh, u, eli);
+    const auto stresscomp =
+        Elasticity::TwoD::VonMisesComputer<std::decay_t<decltype(el)>>(el, uel, lambda, mu);
+
+    double max_stress = 0;
+    // Nodal values
+    max_stress = std::max(max_stress, stresscomp.evaluate(-1, -1));
+    max_stress = std::max(max_stress, stresscomp.evaluate(-1, 1));
+    max_stress = std::max(max_stress, stresscomp.evaluate(1, -1));
+
+    // Quadrature point values.
+    const auto rule = el.coordinate_map().template quadrature_rule<8>();
+
+    for (auto pt : rule.points)
+    {
+        max_stress = std::max(max_stress, stresscomp.evaluate(pt));
+    }
+
+    return max_stress;
+}
+
+template <class Mesh>
+Eigen::VectorXd elemental_max_stress(
+    const Mesh &mesh, const Eigen::VectorXd &u, const Eigen::VectorXd &rho, double lambda, double mu)
+{
+    Eigen::VectorXd sigma_max = Eigen::VectorXd::Zero(mesh.num_elements());
+    for (std::size_t eli = 0; eli < mesh.num_elements(); ++eli)
+    {
+        sigma_max[eli] = std::max(sigma_max[eli], elemental_max_stress(mesh, eli, u, rho[eli], lambda, mu));
+    }
+
+    return sigma_max;
+}
+
 } // namespace
 
 void cell_centered_stress(Eigen::VectorXd &dest, const ModelInfoVariant &minfo, double lambda, double mu)
 {
     std::visit(
-        [&, lambda, mu](const auto &minfo) {
-            cell_centered_stress(dest, minfo.displacement, minfo.mesh, lambda, mu);
-        },
+        [&, lambda, mu](const auto &minfo)
+        { cell_centered_stress(dest, minfo.displacement, minfo.mesh, lambda, mu); },
         minfo);
 }
 
@@ -107,9 +167,8 @@ Eigen::VectorXd averaged_nodal_stress(
     double lambda, double mu)
 {
     return std::visit(
-        [&, lambda, mu](const auto &minfo) {
-            return averaged_nodal_stress(minfo.mesh, minfo.displacement, nadjacent, rho, lambda, mu);
-        },
+        [&, lambda, mu](const auto &minfo)
+        { return averaged_nodal_stress(minfo.mesh, minfo.displacement, nadjacent, rho, lambda, mu); },
         minfo);
 }
 
@@ -120,7 +179,8 @@ void pnorm_stress_aggregates(
     aggregates = Eigen::VectorXd::Zero(def.agg_regions.n);
     auto counts = std::vector<int>(aggregates.size(), 0);
     std::visit(
-        [&, lambda, mu](const auto &minfo) {
+        [&, lambda, mu](const auto &minfo)
+        {
             cc_stress.resize(minfo.mesh.num_elements());
             const auto &u = minfo.displacement;
             for (std::size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
@@ -169,7 +229,8 @@ void pnorm_aggs_with_jacobian(
     aggs = Eigen::VectorXd::Zero(def.agg_regions.n);
     auto counts = std::vector<int>(aggs.size(), 0);
     std::visit(
-        [&](const auto &minfo) {
+        [&](const auto &minfo)
+        {
             J = std::decay_t<decltype(J)>::Zero(def.agg_regions.n, minfo.mesh.num_elements());
             cc_stress.resize(minfo.mesh.num_elements());
 
@@ -349,23 +410,6 @@ void integrate_over_element_with_partials(
 }
 
 template <class Mesh>
-auto extract_coeffs(const Mesh &mesh, const Eigen::VectorXd &u, size_t eli)
-{
-    using Element = decltype(Elasticity::TwoD::instantiate_element(mesh, eli));
-    assert(eli < mesh.num_elements());
-
-    Eigen::Matrix<double, Element::basis.size() * 2, 1> coeffs;
-    const auto &nn = mesh.element(eli).node_numbers();
-    for (int i = 0; i < coeffs.size() / 2; ++i)
-    {
-        coeffs[2 * i] = u[2 * nn[i]];
-        coeffs[2 * i + 1] = u[2 * nn[i] + 1];
-    }
-
-    return coeffs;
-}
-
-template <class Mesh>
 Eigen::VectorXd get_max_quadrature_stresses(
     const StressCriterionDefinition &def, const ModelInfo<Mesh> &minfo, double lambda, double mu)
 {
@@ -488,9 +532,8 @@ void ks_aggs_with_jacobian(
     Eigen::MatrixXd &workspace, Eigen::MatrixXd &workspace2)
 {
     std::visit(
-        [&, lambda, mu](const auto &minfo) {
-            ks_aggregates_w_jacobian(aggs, J, def, minfo, lambda, mu, workspace, workspace2);
-        },
+        [&, lambda, mu](const auto &minfo)
+        { ks_aggregates_w_jacobian(aggs, J, def, minfo, lambda, mu, workspace, workspace2); },
         minfo);
 }
 
@@ -507,7 +550,8 @@ updated_max_stress(const ModelInfo<Mesh> &minfo, size_t eli, double lambda, doub
     const auto stress_computer =
         Elasticity::TwoD::VonMisesComputer<std::decay_t<decltype(el)>>(el, u, lambda, mu);
 
-    auto update_max = [&](auto... args) {
+    auto update_max = [&](auto... args)
+    {
         double sigma = stress_computer.evaluate(args...);
         if (sigma > max_stress)
         {
@@ -539,7 +583,8 @@ double estimate_max_stress(const ModelInfo<Mesh> &minfo, double lambda, double m
 
     for (size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
     {
-        max_stress = updated_max_stress(minfo, eli, lambda, mu, max_stress);
+        max_stress = std::max(
+            max_stress, elemental_max_stress(minfo.mesh, eli, minfo.displacement, 1.0, lambda, mu));
     }
 
     return max_stress;
@@ -588,6 +633,15 @@ double estimate_ks_alpha(const ModelInfo<Mesh> &minfo, double lambda, double mu,
 double estimate_max_stress(const ModelInfoVariant &minfo, double lambda, double mu)
 {
     return std::visit([=](const auto &minfo) { return estimate_max_stress(minfo, lambda, mu); }, minfo);
+}
+
+Eigen::VectorXd
+elemental_max_stress(const ModelInfoVariant &minfo, const Eigen::VectorXd &rho, double lambda, double mu)
+{
+    return std::visit(
+        [&, lambda, mu](const auto &minfo)
+        { return elemental_max_stress(minfo.mesh, minfo.displacement, rho, lambda, mu); },
+        minfo);
 }
 
 double estimate_ks_alpha(const ModelInfoVariant &minfo, double lambda, double mu, double p, double frac)
