@@ -159,12 +159,12 @@ int main()
     double eps_stress = mat_options.epsilon_stress.value();
     evaluator.set_parameter(
         get_initial_condition(num_elements(evaluator.model_info()), opt_options).data());
-    double ks_alpha = evaluator.estimated_ks_alpha(agg_options.aggregation_multiplier.value(), 1.0);
+    double ks_alpha = evaluator.estimated_ks_alpha(
+        agg_options.aggregation_multiplier.value(), opt_options.stress_limit.value(), 1.0);
     evaluator.set_stress_criterion(StressCriterionDefinition{
         ErsatzStiffness(p_stress, eps_stress),
         assign_agg_regions(evaluator.cell_centered_stress(), agg_options.num_aggregation_regions.value()),
-        agg_options.aggregation_multiplier.value(),
-        Eigen::VectorXd::Constant(agg_options.num_aggregation_regions.value(), ks_alpha)});
+        agg_options.aggregation_multiplier.value(), opt_options.stress_limit.value(), ks_alpha});
 
     Ipopt::SmartPtr<OptimizationProblem> problem =
         new OptimizationProblem(evaluator, opt_options, parse_optimization_type(options));

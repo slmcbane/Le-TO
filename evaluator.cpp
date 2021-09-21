@@ -270,12 +270,12 @@ double Evaluator::max_stress()
     return estimate_max_stress(model_info(), lambda, mu);
 }
 
-double Evaluator::estimated_ks_alpha(double p, double frac)
+double Evaluator::estimated_ks_alpha(double p, double stress_limit, double frac)
 {
     if (!solved_forward)
     {
         solve_forward();
     }
 
-    return estimate_ks_alpha(model_info(), lambda, mu, p, frac);
+    return estimate_ks_alpha(model_info(), lambda, mu, p, stress_limit, frac);
 }

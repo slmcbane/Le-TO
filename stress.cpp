@@ -307,15 +307,13 @@ namespace
 template <class Element, class Interp>
 struct KSComputer
 {
-    KSComputer(const Interp &interp, double p, double m, double rho) : interp(interp), p{p}, m{m}, rho{rho}
-    {
-    }
+    KSComputer(const Interp &interp, double p, double rho) : interp(interp), p{p}, rho{rho} {}
 
     template <class Computer, class... Args>
     double evaluate(const Computer &stress_computer, const Args &...args) const
     {
         const double sigma = evaluate_relaxed_stress(stress_computer, args...);
-        return std::exp(p * (sigma - m));
+        return std::exp(p * sigma);
     }
 
     /*
@@ -330,7 +328,7 @@ struct KSComputer
     {
         const auto [sigma, sigma_rho, sigma_u] =
             evaluate_relaxed_stress_with_partials(stress_computer, args...);
-        const double integrand = std::exp(p * (sigma - m));
+        const double integrand = std::exp(p * sigma);
 
         dst(0) = integrand;
         dst(1) = integrand * sigma_rho;
@@ -361,7 +359,7 @@ struct KSComputer
 
   private:
     Interp interp;
-    double p, m, rho;
+    double p, rho;
 };
 
 template <
@@ -369,9 +367,9 @@ template <
     class Coeffs>
 double integrate_over_element(
     const Element &el, const Coeffs &coeffs, const Interp &interp, double lambda, double mu, double p,
-    double m, double rho)
+    double stress_limit, double rho)
 {
-    const KSComputer<Element, Interp> c(interp, p, m, rho);
+    const KSComputer<Element, Interp> c(interp, p / stress_limit, rho);
 
     double result = 0;
     const auto quadrature_rule = el.coordinate_map().template quadrature_rule<Order>();
@@ -391,9 +389,9 @@ template <
     class Coeffs>
 void integrate_over_element_with_partials(
     const Element &el, const Coeffs &coeffs, const Interp &interp, double lambda, double mu, double p,
-    double m, double rho, Eigen::Matrix<double, 2 * (Element::basis.size() + 1), 1> &dst)
+    double stress_limit, double rho, Eigen::Matrix<double, 2 * (Element::basis.size() + 1), 1> &dst)
 {
-    const KSComputer<Element, Interp> c(interp, p, m, rho);
+    const KSComputer<Element, Interp> c(interp, p / stress_limit, rho);
 
     std::decay_t<decltype(dst)> work;
     dst.fill(0);
@@ -448,7 +446,6 @@ void ks_aggregates(
     double lambda, double mu)
 {
     assert(def.agg_regions.assignments.size() == minfo.mesh.num_elements());
-    auto ms = get_max_quadrature_stresses(def, minfo, lambda, mu);
     aggs = Eigen::VectorXd::Zero(def.agg_regions.n);
 
     const auto &u = minfo.displacement;
@@ -457,12 +454,13 @@ void ks_aggregates(
     {
         auto coeffs = extract_coeffs(minfo.mesh, u, eli);
         auto which_agg = def.agg_regions.assignments[eli];
-        aggs[which_agg] += integrate_over_element(
+        double element_value = integrate_over_element(
             Elasticity::TwoD::instantiate_element(minfo.mesh, eli), coeffs, def.stiffness_interp, lambda,
-            mu, def.p, ms[which_agg], minfo.rho_filt[eli]);
+            mu, def.p, def.stress_limit, minfo.rho_filt[eli]);
+        aggs[which_agg] += element_value;
     }
 
-    aggs = ms.array() + (aggs.array().log() - def.alphas.array().log()) / def.p;
+    aggs = (aggs.array() / def.alpha).log() / def.p;
 }
 
 template <class Mesh>
@@ -472,7 +470,6 @@ void ks_aggregates_w_jacobian(
     Eigen::MatrixXd &workspace, Eigen::MatrixXd &workspace2)
 {
     assert(def.agg_regions.assignments.size() == minfo.mesh.num_elements());
-    auto ms = get_max_quadrature_stresses(def, minfo, lambda, mu);
     aggs = Eigen::VectorXd::Zero(def.agg_regions.n);
     J = std::decay_t<decltype(J)>::Zero(def.agg_regions.n, minfo.mesh.num_elements());
     workspace = Eigen::MatrixXd::Zero(2 * minfo.mesh.num_nodes(), J.rows());
@@ -487,7 +484,7 @@ void ks_aggregates_w_jacobian(
         Eigen::Matrix<double, 2 * decltype(el)::basis.size() + 2, 1> integrated;
 
         integrate_over_element_with_partials(
-            el, coeffs, def.stiffness_interp, lambda, mu, def.p, ms[which_agg], minfo.rho_filt[eli],
+            el, coeffs, def.stiffness_interp, lambda, mu, def.p, def.stress_limit, minfo.rho_filt[eli],
             integrated);
 
         aggs[which_agg] += integrated(0);
@@ -504,9 +501,9 @@ void ks_aggregates_w_jacobian(
         }
     }
 
-    J.array().colwise() /= aggs.array();
-    workspace.array().rowwise() /= aggs.transpose().array();
-    aggs = ms.array() + (aggs.array().log() - def.alphas.array().log()) / def.p;
+    J.array().colwise() /= (aggs.array() * def.stress_limit);
+    workspace.array().rowwise() /= (def.stress_limit * aggs.transpose().array());
+    aggs = (aggs.array() / def.alpha).log() / def.p;
 
     eliminate_essential_boundaries(workspace, minfo);
     workspace2 = -minfo.factorized.solve(workspace);
@@ -577,6 +574,21 @@ updated_max_stress(const ModelInfo<Mesh> &minfo, size_t eli, double lambda, doub
 }
 
 template <class Mesh>
+double
+estimate_max_stress(const ModelInfo<Mesh> &minfo, const Eigen::VectorXd &rho, double lambda, double mu)
+{
+    double max_stress = 0;
+
+    for (size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
+    {
+        max_stress = std::max(
+            max_stress, elemental_max_stress(minfo.mesh, eli, minfo.displacement, rho[eli], lambda, mu));
+    }
+
+    return max_stress;
+}
+
+template <class Mesh>
 double estimate_max_stress(const ModelInfo<Mesh> &minfo, double lambda, double mu)
 {
     double max_stress = 0;
@@ -592,7 +604,8 @@ double estimate_max_stress(const ModelInfo<Mesh> &minfo, double lambda, double m
 
 template <class Mesh>
 double ks_alpha_contrib(
-    const ModelInfo<Mesh> &minfo, size_t eli, double lambda, double mu, double p, double max_stress)
+    const ModelInfo<Mesh> &minfo, size_t eli, double lambda, double mu, double p, double stress_limit,
+    double max_stress)
 {
     const auto u = extract_coeffs(minfo.mesh, minfo.displacement, eli);
     const auto el = Elasticity::TwoD::instantiate_element(minfo.mesh, eli);
@@ -605,7 +618,8 @@ double ks_alpha_contrib(
     double integrated = 0;
     for (size_t i = 0; i < rule.points.size(); ++i)
     {
-        const double integrand = std::exp(p * (stress_computer.evaluate(rule.points[i]) - max_stress));
+        const double integrand =
+            std::exp(p * (stress_computer.evaluate(rule.points[i]) - max_stress) / stress_limit);
         const double det = el.coordinate_map().detJ()(rule.points[i]);
         integrated += integrand * det * rule.weights[i];
     }
@@ -614,7 +628,8 @@ double ks_alpha_contrib(
 }
 
 template <class Mesh>
-double estimate_ks_alpha(const ModelInfo<Mesh> &minfo, double lambda, double mu, double p)
+double
+estimate_ks_alpha(const ModelInfo<Mesh> &minfo, double lambda, double mu, double p, double stress_limit)
 {
     const double max_stress = estimate_max_stress(minfo, lambda, mu);
     fmt::print("  Max. stress in the domain is {:E}\n", max_stress);
@@ -622,7 +637,7 @@ double estimate_ks_alpha(const ModelInfo<Mesh> &minfo, double lambda, double mu,
 
     for (size_t eli = 0; eli < minfo.mesh.num_elements(); ++eli)
     {
-        integral += ks_alpha_contrib(minfo, eli, lambda, mu, p, max_stress);
+        integral += ks_alpha_contrib(minfo, eli, lambda, mu, p, stress_limit, max_stress);
     }
 
     return integral;
@@ -632,7 +647,8 @@ double estimate_ks_alpha(const ModelInfo<Mesh> &minfo, double lambda, double mu,
 
 double estimate_max_stress(const ModelInfoVariant &minfo, double lambda, double mu)
 {
-    return std::visit([=](const auto &minfo) { return estimate_max_stress(minfo, lambda, mu); }, minfo);
+    return std::visit(
+        [=](const auto &minfo) { return estimate_max_stress(minfo, minfo.rho_filt, lambda, mu); }, minfo);
 }
 
 Eigen::VectorXd
@@ -644,11 +660,12 @@ elemental_max_stress(const ModelInfoVariant &minfo, const Eigen::VectorXd &rho, 
         minfo);
 }
 
-double estimate_ks_alpha(const ModelInfoVariant &minfo, double lambda, double mu, double p, double frac)
+double estimate_ks_alpha(
+    const ModelInfoVariant &minfo, double lambda, double mu, double p, double stress_limit, double frac)
 {
     fmt::print("Estimating K-S normalization...\n");
-    double integral =
-        std::visit([=](const auto &minfo) { return estimate_ks_alpha(minfo, lambda, mu, p); }, minfo);
+    double integral = std::visit(
+        [=](const auto &minfo) { return estimate_ks_alpha(minfo, lambda, mu, p, stress_limit); }, minfo);
 
     double alpha = integral * frac;
     fmt::print("Estimated alpha as {:E}\n", alpha);

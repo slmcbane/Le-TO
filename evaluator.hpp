@@ -39,7 +39,7 @@ class Evaluator
 
     double max_stress();
 
-    double estimated_ks_alpha(double p, double frac);
+    double estimated_ks_alpha(double p, double stress_limit, double frac);
 
     const Eigen::VectorXd &cell_centered_stress();
 

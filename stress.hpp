@@ -33,8 +33,7 @@ struct StressCriterionDefinition
 {
     ErsatzStiffness stiffness_interp;
     AggregationRegions agg_regions;
-    double p;
-    Eigen::VectorXd alphas;
+    double p, stress_limit, alpha;
 };
 
 /*
@@ -73,7 +72,8 @@ void pnorm_aggs_with_jacobian(
  * Kennedy and Hicken. The returned alpha is frac * upper bound from that
  * equation. p is multiplier in the K-S functional.
  */
-double estimate_ks_alpha(const ModelInfoVariant &minfo, double lambda, double mu, double p, double frac);
+double estimate_ks_alpha(
+    const ModelInfoVariant &minfo, double lambda, double mu, double p, double stress_limit, double frac);
 
 /*
  * Estimate maximum stress by evaluating at all quadrature points

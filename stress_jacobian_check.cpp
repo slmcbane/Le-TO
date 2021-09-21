@@ -25,6 +25,10 @@ int main()
     auto [lambda, mu] = Elasticity::TwoD::lame_parameters(E, nu);
     Eigen::Vector2d force(0.0, -force_magnitude);
 
+    OptimizationOptions opt_options;
+    parse_optimization_options(options, opt_options);
+    double sigma_max = opt_options.stress_limit.value();
+
     Evaluator evaluator(mesh_file, order, force, stiffness_interp, filter_radius, lambda, mu);
 
     AggregationOptions agg_options;
@@ -51,8 +55,7 @@ int main()
     int nregions = *agg_options.num_aggregation_regions;
     auto agg_regions = assign_agg_regions(evaluator.cell_centered_stress(), nregions);
     evaluator.set_stress_criterion(StressCriterionDefinition{
-        stress_interp, std::move(agg_regions), *agg_options.aggregation_multiplier,
-        Eigen::VectorXd::Constant(nregions, 1)});
+        stress_interp, std::move(agg_regions), *agg_options.aggregation_multiplier, sigma_max, 1.0});
 
     const auto ref_jac = evaluator.stress_agg_jacobian();
     const auto ref_aggs = evaluator.stress_aggregates();

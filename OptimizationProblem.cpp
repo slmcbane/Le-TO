@@ -47,7 +47,7 @@ bool OptimizationProblem::get_bounds_info(
         for (Index i = 0; i < m; ++i)
         {
             g_l[i] = -1e20;
-            g_u[i] = m_options.stress_limit.value();
+            g_u[i] = 1.0;
         }
         break;
     case MWCS:
@@ -56,7 +56,7 @@ bool OptimizationProblem::get_bounds_info(
         for (Index i = 1; i < m; ++i)
         {
             g_l[i] = -1e20;
-            g_u[i] = m_options.stress_limit.value();
+            g_u[i] = 1.0;
         }
         break;
     case MCW:

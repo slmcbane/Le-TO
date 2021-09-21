@@ -23,7 +23,7 @@ constexpr size_t max_node_adjacencies()
     }
     else if constexpr (order == 4)
     {
-        return 72;
+        return 96;
     }
 }
 
